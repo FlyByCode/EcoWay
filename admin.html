@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EcoWay — Admin Paneli</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
+<style>
+:root {
+  --bg:#f8f8f5; --white:#fff;
+  --green:#2a6b42; --green2:#358555; --teal:#1e8a7c;
+  --text:#1c1c1a; --muted:#72726a;
+  --light:#e4ece4; --border:#dcdcd4;
+  --danger:#c0392b; --danger2:#e74c3c;
+  --warning:#d97706; --warning-bg:#fffbeb; --warning-border:#fde68a;
+  --success:#16a34a; --success-bg:#f0fdf4; --success-border:#bbf7d0;
+  --radius:8px; --radius-md:12px;
+  --shadow:0 2px 12px rgba(0,0,0,.07);
+  --shadow-md:0 4px 24px rgba(0,0,0,.1);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Source Sans 3',sans-serif;font-size:15px;line-height:1.7;}
+
+/* GİRİŞ */
+#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1c1c1a,#2a3a2a);}
+.login-card{background:var(--white);border-radius:var(--radius-md);padding:2.8rem 2.5rem;width:100%;max-width:380px;box-shadow:var(--shadow-md);animation:fadeUp .6s cubic-bezier(.22,1,.36,1) both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.login-logo{font-family:'Lora',serif;font-size:1.4rem;font-weight:700;color:var(--green);margin-bottom:.3rem;}
+.login-sub{font-size:.82rem;color:var(--muted);margin-bottom:2rem;}
+.lbl{font-size:.74rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);display:block;margin-bottom:.4rem;}
+.inp{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius);padding:.7rem 1rem;font-family:'Source Sans 3',sans-serif;font-size:.9rem;color:var(--text);transition:border .2s,box-shadow .2s;margin-bottom:1.2rem;}
+.inp:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(42,107,66,.1);}
+.login-btn{width:100%;background:var(--green);color:#fff;border:none;padding:.75rem;border-radius:var(--radius);font-family:'Source Sans 3',sans-serif;font-size:.95rem;font-weight:600;cursor:pointer;transition:background .2s,transform .1s;}
+.login-btn:hover{background:var(--green2);transform:translateY(-1px);}
+.login-err{font-size:.82rem;color:var(--danger);margin-top:.8rem;text-align:center;display:none;}
+
+/* ADMIN */
+#adminPanel{display:none;min-height:100vh;}
+.admin-nav{background:#1c1c1a;padding:0 2rem;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.admin-nav-logo{font-family:'Lora',serif;font-size:1.05rem;font-weight:700;color:#8ec4a0;}
+.admin-nav-right{display:flex;align-items:center;gap:1rem;}
+.logout-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);padding:.3rem .9rem;border-radius:var(--radius);font-size:.8rem;cursor:pointer;font-family:'Source Sans 3',sans-serif;}
+.logout-btn:hover{background:rgba(255,255,255,.18);}
+.admin-main{max-width:1100px;margin:0 auto;padding:2rem 1.5rem;}
+
+/* STAT KARTLARI */
+.stat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:2rem;}
+.stat-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius-md);padding:1.3rem 1.5rem;box-shadow:var(--shadow);}
+.stat-lbl{font-size:.74rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:.5rem;}
+.stat-val{font-family:'Lora',serif;font-size:2rem;font-weight:700;color:var(--green);}
+.stat-sub{font-size:.75rem;color:var(--muted);margin-top:.2rem;}
+
+/* TABS */
+.tabs{display:flex;border-bottom:1.5px solid var(--border);margin-bottom:1.5rem;gap:0;flex-wrap:wrap;}
+.tab-btn{background:none;border:none;padding:.65rem 1.3rem;font-size:.875rem;font-family:'Source Sans 3',sans-serif;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1.5px;transition:all .2s;}
+.tab-btn.active{color:var(--green);font-weight:600;border-bottom-color:var(--green);}
+.tab-btn .tab-badge{background:var(--danger);color:#fff;font-size:.65rem;font-weight:700;padding:.1rem .4rem;border-radius:50px;margin-left:.35rem;vertical-align:middle;display:none;}
+.tab-btn .tab-badge.show{display:inline-block;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* BÖLÜM BAŞLIĞI */
+.sec-title{font-family:'Lora',serif;font-size:1.1rem;font-weight:700;margin-bottom:1rem;padding-bottom:.6rem;border-bottom:1.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.sec-title span{font-size:.8rem;font-weight:400;color:var(--muted);}
+
+/* ANKET */
+.poll-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius-md);padding:1.3rem;box-shadow:var(--shadow);max-width:520px;}
+.pbar-wrap{margin-bottom:.7rem;}
+.pbar-lbl{display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:.25rem;}
+.pbar-track{background:var(--bg);border-radius:4px;height:8px;overflow:hidden;}
+.pbar-fill{height:8px;background:var(--green);border-radius:4px;transition:width .6s ease;}
+
+/* YORUMLAR */
+.c-row{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.3rem;margin-bottom:.5rem;display:flex;gap:1rem;align-items:flex-start;transition:border-color .15s;}
+.c-row:hover{border-color:var(--green);}
+.c-avatar{width:34px;height:34px;border-radius:var(--radius);background:var(--green);color:#fff;font-weight:700;font-size:.75rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.c-body{flex:1;min-width:0;}
+.c-meta{font-size:.78rem;color:var(--muted);margin-bottom:.3rem;}
+.c-meta strong{color:var(--text);}
+.c-text{font-size:.875rem;color:var(--text);line-height:1.65;word-break:break-word;}
+.c-actions{display:flex;gap:.5rem;margin-top:.6rem;}
+.btn-del{background:none;border:1.5px solid var(--border);border-radius:var(--radius);padding:.2rem .7rem;font-size:.75rem;color:var(--danger);cursor:pointer;transition:all .2s;font-family:'Source Sans 3',sans-serif;}
+.btn-del:hover{background:var(--danger);color:#fff;border-color:var(--danger);}
+.badge-likes{font-size:.72rem;background:var(--light);color:var(--green);padding:.1rem .45rem;border-radius:6px;}
+
+/* ══════════════════════════════
+   BAĞIŞLAR TAB
+══════════════════════════════ */
+.donation-row{
+  background:var(--white); border:1.5px solid var(--border);
+  border-radius:var(--radius-md); padding:1.2rem 1.4rem;
+  margin-bottom:.75rem; display:flex; gap:1rem; align-items:flex-start;
+  transition:border-color .15s;
+}
+.donation-row:hover{border-color:var(--green);}
+.donation-avatar{
+  width:40px; height:40px; border-radius:var(--radius);
+  background:var(--green); color:#fff; font-weight:700; font-size:.82rem;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.donation-body{flex:1;min-width:0;}
+.donation-top{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:.35rem;}
+.donation-name{font-weight:700;font-size:.95rem;}
+.donation-amount{
+  font-family:'Lora',serif;font-size:1.2rem;font-weight:700;color:var(--green);
+  margin-left:auto;flex-shrink:0;
+}
+.donation-meta{font-size:.78rem;color:var(--muted);margin-bottom:.35rem;}
+.donation-message{
+  font-size:.85rem;color:var(--text);background:var(--bg);
+  border-left:3px solid var(--border);padding:.4rem .75rem;
+  border-radius:0 var(--radius) var(--radius) 0;margin-bottom:.6rem;
+  font-style:italic;
+}
+.donation-actions{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;}
+
+/* Durum badge */
+.status-badge{
+  font-size:.72rem;font-weight:700;padding:.2rem .65rem;
+  border-radius:50px;white-space:nowrap;
+}
+.status-beklemede{background:var(--warning-bg);color:var(--warning);border:1px solid var(--warning-border);}
+.status-onaylandi{background:var(--success-bg);color:var(--success);border:1px solid var(--success-border);}
+.status-reddedildi{background:#fff5f5;color:var(--danger);border:1px solid #f0c0b8;}
+
+/* Aksiyon butonları */
+.btn-approve{
+  background:none;border:1.5px solid var(--success);border-radius:var(--radius);
+  padding:.22rem .75rem;font-size:.75rem;color:var(--success);cursor:pointer;
+  transition:all .2s;font-family:'Source Sans 3',sans-serif;font-weight:600;
+}
+.btn-approve:hover{background:var(--success);color:#fff;}
+.btn-reject{
+  background:none;border:1.5px solid var(--border);border-radius:var(--radius);
+  padding:.22rem .75rem;font-size:.75rem;color:var(--danger);cursor:pointer;
+  transition:all .2s;font-family:'Source Sans 3',sans-serif;
+}
+.btn-reject:hover{background:var(--danger);color:#fff;border-color:var(--danger);}
+.btn-del-don{
+  background:none;border:1.5px solid var(--border);border-radius:var(--radius);
+  padding:.22rem .65rem;font-size:.75rem;color:var(--muted);cursor:pointer;
+  transition:all .2s;font-family:'Source Sans 3',sans-serif;
+}
+.btn-del-don:hover{background:var(--danger);color:#fff;border-color:var(--danger);}
+
+/* Filtre toolbar */
+.filter-bar{display:flex;gap:.5rem;margin-bottom:1.2rem;flex-wrap:wrap;align-items:center;}
+.filter-btn{
+  background:var(--white);border:1.5px solid var(--border);
+  border-radius:50px;padding:.3rem .9rem;font-size:.8rem;
+  cursor:pointer;font-family:'Source Sans 3',sans-serif;color:var(--muted);
+  transition:all .2s;
+}
+.filter-btn:hover,.filter-btn.active{
+  border-color:var(--green);color:var(--green);background:var(--light);
+}
+.donation-total-bar{
+  background:var(--light);border:1.5px solid var(--border);
+  border-radius:var(--radius);padding:.7rem 1.1rem;margin-bottom:1.2rem;
+  font-size:.875rem;color:var(--text);display:flex;gap:2rem;flex-wrap:wrap;
+}
+.donation-total-bar strong{color:var(--green);}
+
+/* TEHLİKELİ BÖLGE */
+.danger-zone{background:#fff5f5;border:1.5px solid #f0c0b8;border-radius:var(--radius-md);padding:1.4rem 1.5rem;}
+.danger-title{font-family:'Lora',serif;font-size:1rem;font-weight:700;color:var(--danger);margin-bottom:1rem;}
+.danger-actions{display:flex;gap:.75rem;flex-wrap:wrap;}
+.btn-danger{background:var(--danger);color:#fff;border:none;padding:.55rem 1.2rem;border-radius:var(--radius);font-family:'Source Sans 3',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;transition:background .2s,transform .1s;}
+.btn-danger:hover{background:var(--danger2);transform:translateY(-1px);}
+.btn-danger-o{background:none;color:var(--danger);border:1.5px solid var(--danger);padding:.55rem 1.2rem;border-radius:var(--radius);font-family:'Source Sans 3',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .2s;}
+.btn-danger-o:hover{background:var(--danger);color:#fff;}
+
+/* TOAST */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--text);color:#fff;padding:.8rem 1.2rem;border-radius:var(--radius-md);font-size:.85rem;transform:translateY(80px);opacity:0;transition:all .3s;z-index:999;max-width:280px;border-left:3px solid var(--teal);box-shadow:0 8px 24px rgba(0,0,0,.2);}
+.toast.show{transform:translateY(0);opacity:1;}
+
+/* MODAL */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:500;opacity:0;pointer-events:none;transition:opacity .2s;}
+.modal-ov.open{opacity:1;pointer-events:all;}
+.modal-box{background:var(--white);border-radius:var(--radius-md);padding:2rem;max-width:360px;width:90%;box-shadow:var(--shadow-md);transform:scale(.95);transition:transform .2s;}
+.modal-ov.open .modal-box{transform:scale(1);}
+.modal-title{font-family:'Lora',serif;font-size:1.05rem;font-weight:700;margin-bottom:.6rem;}
+.modal-text{font-size:.875rem;color:var(--muted);margin-bottom:1.4rem;}
+.modal-actions{display:flex;gap:.7rem;justify-content:flex-end;}
+.modal-cancel{background:none;border:1.5px solid var(--border);border-radius:var(--radius);padding:.5rem 1.1rem;font-size:.875rem;cursor:pointer;font-family:'Source Sans 3',sans-serif;}
+.modal-cancel:hover{border-color:var(--text);}
+.modal-ok{background:var(--danger);color:#fff;border:none;border-radius:var(--radius);padding:.5rem 1.2rem;font-size:.875rem;font-weight:600;cursor:pointer;font-family:'Source Sans 3',sans-serif;}
+.modal-ok:hover{background:var(--danger2);}
+
+/* BOŞ */
+.empty{text-align:center;padding:2.5rem;color:var(--muted);font-size:.875rem;background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius-md);}
+
+@media(max-width:900px){.stat-grid{grid-template-columns:1fr 1fr 1fr;}}
+@media(max-width:700px){.stat-grid{grid-template-columns:1fr 1fr;}.admin-main{padding:1.2rem 1rem;}.donation-amount{margin-left:0;}}
+@media(max-width:400px){.stat-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<!-- GİRİŞ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">EcoWay</div>
+    <div class="login-sub">Admin Paneli — Yetkili Giriş</div>
+    <label class="lbl" for="adminPass">Yönetici Şifresi</label>
+    <input type="password" id="adminPass" class="inp" placeholder="••••••••"
+      onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">Giriş Yap</button>
+    <div class="login-err" id="loginErr">Hatalı şifre. Tekrar deneyin.</div>
+  </div>
+</div>
+
+<!-- PANEL -->
+<div id="adminPanel">
+  <nav class="admin-nav">
+    <div class="admin-nav-logo">EcoWay Admin</div>
+    <div class="admin-nav-right">
+      <a href="index.html" style="color:rgba(255,255,255,.6);font-size:.82rem;text-decoration:none;padding:.3rem .9rem;border-radius:var(--radius);background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);">← Ana Sayfa</a>
+      <button class="logout-btn" onclick="doLogout()">Çıkış Yap</button>
+    </div>
+  </nav>
+
+  <div class="admin-main">
+
+    <!-- İSTATİSTİK KARTLARI -->
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-lbl">Toplam Oy</div>
+        <div class="stat-val" id="sSumVotes">—</div>
+        <div class="stat-sub">Ankete katılan</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-lbl">Destek</div>
+        <div class="stat-val" id="sSupportCount">—</div>
+        <div class="stat-sub">Kişi destekledi</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-lbl">Yorumlar</div>
+        <div class="stat-val" id="sCommentCount">—</div>
+        <div class="stat-sub">Toplam yorum</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-lbl">Bağışlar</div>
+        <div class="stat-val" id="sDonationCount">—</div>
+        <div class="stat-sub">Toplam bağış</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-lbl">Bekleyen</div>
+        <div class="stat-val" id="sPendingCount" style="color:var(--warning);">—</div>
+        <div class="stat-sub">Onay bekliyor</div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('anket')">Anket</button>
+      <button class="tab-btn" onclick="switchTab('yorumlar')">Yorumlar</button>
+      <button class="tab-btn" id="tabBtnBagis" onclick="switchTab('bagislar')">
+        Bağışlar <span class="tab-badge" id="pendingBadge"></span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('tehlike')">Tehlikeli Bölge</button>
+    </div>
+
+    <!-- ANKET TAB -->
+    <div class="tab-panel active" id="tab-anket">
+      <div class="sec-title">Anket Sonuçları <span id="pollTotal"></span></div>
+      <div class="poll-card" id="pollAdminCard">
+        <p style="color:var(--muted);font-size:.85rem;">Yükleniyor…</p>
+      </div>
+    </div>
+
+    <!-- YORUMLAR TAB -->
+    <div class="tab-panel" id="tab-yorumlar">
+      <div class="sec-title">Yorumlar <span id="commentHeaderCount"></span></div>
+      <div id="commentAdminList"><div class="empty">Yükleniyor…</div></div>
+    </div>
+
+    <!-- BAĞIŞLAR TAB -->
+    <div class="tab-panel" id="tab-bagislar">
+      <div class="sec-title">
+        Bağışlar
+        <span id="donationHeaderCount"></span>
+      </div>
+
+      <!-- Filtre -->
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="filterDonations('tumu', this)">Tümü</button>
+        <button class="filter-btn" onclick="filterDonations('beklemede', this)">⏳ Bekleyen</button>
+        <button class="filter-btn" onclick="filterDonations('onaylandi', this)">✅ Onaylanan</button>
+        <button class="filter-btn" onclick="filterDonations('reddedildi', this)">❌ Reddedilen</button>
+      </div>
+
+      <!-- Özet çubuk -->
+      <div class="donation-total-bar" id="donationTotalBar">
+        Toplam: <strong id="dTotalCount">0</strong> bağış &nbsp;|&nbsp;
+        Simüle tutar: <strong id="dTotalAmount">₺0</strong> &nbsp;|&nbsp;
+        Bekleyen: <strong id="dPendingBar">0</strong>
+      </div>
+
+      <div id="donationAdminList"><div class="empty">Yükleniyor…</div></div>
+    </div>
+
+    <!-- TEHLİKELİ BÖLGE TAB -->
+    <div class="tab-panel" id="tab-tehlike">
+      <div class="danger-zone">
+        <div class="danger-title">⚠️ Tehlikeli Bölge</div>
+        <p style="font-size:.875rem;color:var(--muted);margin-bottom:1.2rem;">Bu işlemler geri alınamaz. Dikkatli olun.</p>
+        <div class="danger-actions">
+          <button class="btn-danger-o" onclick="ask('Tüm anket oylarını sıfırla?','Bu işlem geri alınamaz.',resetPoll)">Anketi Sıfırla</button>
+          <button class="btn-danger-o" onclick="ask('Destek sayacını sıfırla?','Destek verisi silinecek.',resetSupport)">Desteği Sıfırla</button>
+          <button class="btn-danger"   onclick="ask('TÜM yorumları sil?','Tüm yorumlar kalıcı olarak silinecek!',resetComments)">Tüm Yorumları Sil</button>
+          <button class="btn-danger-o" onclick="ask('TÜM bağışları sil?','Tüm bağış kayıtları silinecek!',resetDonations)">Bağışları Temizle</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="toastMsg"></span></div>
+
+<div class="modal-ov" id="mOv">
+  <div class="modal-box">
+    <div class="modal-title" id="mTitle">Emin misiniz?</div>
+    <div class="modal-text"  id="mText">Bu işlem geri alınamaz.</div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeMod()">İptal</button>
+      <button class="modal-ok" id="mOk">Evet, Devam Et</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Firebase firebase-config.js üzerinden geliyor
+// fbRef() ve ADMIN_PASS orada tanımlı.
+
+// ── GİRİŞ ──
+function doLogin(){
+  const p = document.getElementById('adminPass').value;
+  if(p === ADMIN_PASS){ sessionStorage.setItem('eco_admin','1'); showAdmin(); }
+  else {
+    document.getElementById('loginErr').style.display='block';
+    document.getElementById('adminPass').value='';
+    setTimeout(()=>{ document.getElementById('loginErr').style.display='none'; },3000);
+  }
+}
+function doLogout(){ sessionStorage.removeItem('eco_admin'); location.reload(); }
+function showAdmin(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('adminPanel').style.display='block';
+  loadAll();
+}
+if(sessionStorage.getItem('eco_admin')==='1') showAdmin();
+
+// ── TOAST ──
+function toast(msg,err){
+  const t=document.getElementById('toast');
+  t.style.borderLeftColor=err?'var(--danger)':'var(--teal)';
+  document.getElementById('toastMsg').textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ── TABS ──
+function switchTab(id){
+  const tabNames=['anket','yorumlar','bagislar','tehlike'];
+  tabNames.forEach((n,i)=>{
+    document.querySelectorAll('.tab-btn')[i].classList.toggle('active',n===id);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+}
+
+// ── MODAL ──
+function ask(title,text,cb){
+  document.getElementById('mTitle').textContent=title;
+  document.getElementById('mText').textContent=text;
+  document.getElementById('mOk').onclick=()=>{closeMod();cb();};
+  document.getElementById('mOv').classList.add('open');
+}
+function closeMod(){ document.getElementById('mOv').classList.remove('open'); }
+document.getElementById('mOv').addEventListener('click',e=>{
+  if(e.target===document.getElementById('mOv')) closeMod();
+});
+
+// ── VERİ YÜKLEME ──
+function loadAll(){ loadPoll(); loadSupport(); loadComments(); loadDonations(); }
+
+// ANKET
+function loadPoll(){
+  const r=fbRef('ecoway/poll');
+  if(!r){ renderPoll({evet:0,pilot:0,bilmiyorum:0,hayir:0}); return; }
+  r.on('value',s=>renderPoll(s.val()||{evet:0,pilot:0,bilmiyorum:0,hayir:0}));
+}
+function renderPoll(d){
+  const lbls={evet:'Evet, kurulmalı',pilot:'Önce pilot',bilmiyorum:'Araştırma gerekli',hayir:'İhtiyaç yok'};
+  const total=Object.values(d).reduce((a,b)=>a+b,0);
+  document.getElementById('sSumVotes').textContent=total.toLocaleString('tr-TR');
+  document.getElementById('pollTotal').textContent='Toplam '+total+' oy';
+  const card=document.getElementById('pollAdminCard');
+  card.innerHTML='<div style="font-size:.74rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:1rem;">Oy Dağılımı</div>';
+  Object.entries(d).forEach(([k,v])=>{
+    const pct=total>0?Math.round(v/total*100):0;
+    card.innerHTML+='<div class="pbar-wrap"><div class="pbar-lbl"><span>'+(lbls[k]||k)+'</span><span><strong>'+v+'</strong> ('+pct+'%)</span></div><div class="pbar-track"><div class="pbar-fill" style="width:'+pct+'%"></div></div></div>';
+  });
+}
+
+// DESTEK
+function loadSupport(){
+  const r=fbRef('ecoway/support');
+  if(!r){ document.getElementById('sSupportCount').textContent='0'; return; }
+  r.on('value',s=>{ document.getElementById('sSupportCount').textContent=(s.val()||0).toLocaleString('tr-TR'); });
+}
+
+// YORUMLAR
+function loadComments(){
+  const r=fbRef('ecoway/comments');
+  if(!r){ renderComments([]); return; }
+  r.orderByChild('ts').on('value',s=>{
+    const raw=s.val();
+    const list=raw?Object.values(raw).sort((a,b)=>(b.ts||0)-(a.ts||0)):[];
+    renderComments(list);
+  });
+}
+function renderComments(list){
+  document.getElementById('sCommentCount').textContent=list.length.toLocaleString('tr-TR');
+  document.getElementById('commentHeaderCount').textContent=list.length+' yorum';
+  const box=document.getElementById('commentAdminList');
+  if(!list.length){ box.innerHTML='<div class="empty">Henüz yorum yok.</div>'; return; }
+  box.innerHTML='';
+  list.forEach(c=>{
+    const row=document.createElement('div');
+    row.className='c-row';
+    row.innerHTML=
+      '<div class="c-avatar">'+esc(c.name.slice(0,2).toUpperCase())+'</div>'+
+      '<div class="c-body">'+
+        '<div class="c-meta"><strong>'+esc(c.name)+'</strong> &middot; '+esc(c.role)+' &middot; '+esc(c.date)+
+          ' <span class="badge-likes">&#9829; '+(c.likes||0)+'</span></div>'+
+        '<div class="c-text">'+esc(c.text)+'</div>'+
+        '<div class="c-actions"><button class="btn-del" onclick="delComment(\''+c.id+'\')">Sil</button></div>'+
+      '</div>';
+    box.appendChild(row);
+  });
+}
+
+// ══════════════════════════════════════
+//  BAĞIŞLAR
+// ══════════════════════════════════════
+let allDonations = [];
+let currentFilter = 'tumu';
+
+function loadDonations(){
+  const r = fbRef('ecoway/donations');
+  if(!r){
+    // localStorage fallback
+    const data = JSON.parse(localStorage.getItem('eco_donations_v1') || '[]');
+    allDonations = data.sort((a,b)=>(b.ts||0)-(a.ts||0));
+    renderDonations();
+    return;
+  }
+  r.on('value', s => {
+    const raw = s.val();
+    allDonations = raw ? Object.values(raw).sort((a,b)=>(b.ts||0)-(a.ts||0)) : [];
+    renderDonations();
+  });
+}
+
+function filterDonations(filter, btn) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderDonations();
+}
+
+function renderDonations(){
+  const filtered = currentFilter === 'tumu'
+    ? allDonations
+    : allDonations.filter(d => d.status === currentFilter);
+
+  const total     = allDonations.length;
+  const pending   = allDonations.filter(d=>d.status==='beklemede').length;
+  const totalAmt  = allDonations.reduce((a,d)=>a+(d.amount||0),0);
+
+  // Stat kartları güncelle
+  document.getElementById('sDonationCount').textContent = total;
+  document.getElementById('sPendingCount').textContent  = pending;
+  document.getElementById('dTotalCount').textContent    = total;
+  document.getElementById('dTotalAmount').textContent   = '₺'+totalAmt.toLocaleString('tr-TR');
+  document.getElementById('dPendingBar').textContent    = pending;
+  document.getElementById('donationHeaderCount').textContent = filtered.length+' kayıt';
+
+  // Bekleyen badge
+  const badge = document.getElementById('pendingBadge');
+  badge.textContent = pending;
+  badge.classList.toggle('show', pending > 0);
+
+  const box = document.getElementById('donationAdminList');
+  if(!filtered.length){
+    box.innerHTML = '<div class="empty">Bu filtrede bağış kaydı yok.</div>';
+    return;
+  }
+
+  box.innerHTML = '';
+  filtered.forEach(d => {
+    const row = document.createElement('div');
+    row.className = 'donation-row';
+    row.id = 'drow-'+d.id;
+
+    const statusClass = 'status-'+(d.status||'beklemede');
+    const statusLabel = {beklemede:'⏳ Beklemede', onaylandi:'✅ Onaylandı', reddedildi:'❌ Reddedildi'}[d.status||'beklemede'] || d.status;
+
+    const initials = (d.name||'?').slice(0,2).toUpperCase();
+
+    let actionBtns = '';
+    if((d.status||'beklemede') === 'beklemede'){
+      actionBtns +=
+        '<button class="btn-approve" onclick="updateDonationStatus(\''+d.id+'\',\'onaylandi\')">Onayla</button>'+
+        '<button class="btn-reject"  onclick="updateDonationStatus(\''+d.id+'\',\'reddedildi\')">Reddet</button>';
+    }
+    actionBtns += '<button class="btn-del-don" onclick="askDelDonation(\''+d.id+'\')">Sil</button>';
+
+    row.innerHTML =
+      '<div class="donation-avatar">'+esc(initials)+'</div>'+
+      '<div class="donation-body">'+
+        '<div class="donation-top">'+
+          '<span class="donation-name">'+esc(d.name||'—')+'</span>'+
+          '<span class="status-badge '+statusClass+'">'+statusLabel+'</span>'+
+          '<span class="donation-amount">₺'+(d.amount||0).toLocaleString('tr-TR')+'</span>'+
+        '</div>'+
+        '<div class="donation-meta">'+
+          esc(d.email||'—')+' &middot; '+esc(d.date||'—')+' &middot; Ref: <code style="font-size:.75rem;">'+esc(d.id||'—')+'</code>'+
+        '</div>'+
+        (d.message ? '<div class="donation-message">'+esc(d.message)+'</div>' : '')+
+        '<div class="c-actions">'+actionBtns+'</div>'+
+      '</div>';
+    box.appendChild(row);
+  });
+}
+
+function updateDonationStatus(id, status){
+  const r = fbRef('ecoway/donations/'+id+'/status');
+  if(r){
+    r.set(status, ()=> toast(status==='onaylandi' ? '✅ Bağış onaylandı!' : '❌ Bağış reddedildi.'));
+  } else {
+    // localStorage fallback
+    const data = JSON.parse(localStorage.getItem('eco_donations_v1') || '[]');
+    const d = data.find(x=>x.id===id);
+    if(d){ d.status = status; localStorage.setItem('eco_donations_v1', JSON.stringify(data)); }
+    allDonations = data.sort((a,b)=>(b.ts||0)-(a.ts||0));
+    renderDonations();
+    toast(status==='onaylandi' ? '✅ Bağış onaylandı!' : '❌ Bağış reddedildi.');
+  }
+}
+
+function askDelDonation(id){
+  ask('Bağış kaydını sil?', 'Bu kayıt kalıcı olarak silinecek.', ()=>{
+    const r = fbRef('ecoway/donations/'+id);
+    if(r){
+      r.remove(()=>toast('Bağış kaydı silindi.'));
+    } else {
+      let data = JSON.parse(localStorage.getItem('eco_donations_v1') || '[]');
+      data = data.filter(x=>x.id!==id);
+      localStorage.setItem('eco_donations_v1', JSON.stringify(data));
+      allDonations = data.sort((a,b)=>(b.ts||0)-(a.ts||0));
+      renderDonations();
+      toast('Bağış kaydı silindi.');
+    }
+  });
+}
+
+// SİLME / SIFIRLAMA
+function delComment(id){
+  ask('Yorumu sil?','Bu yorum kalıcı olarak silinecek.',()=>{
+    const r=fbRef('ecoway/comments/'+id);
+    if(r) r.remove(()=>toast('Yorum silindi.'));
+    else toast('Firebase bağlantısı yok.',true);
+  });
+}
+function resetPoll(){
+  const r=fbRef('ecoway/poll');
+  if(r) r.set({evet:0,pilot:0,bilmiyorum:0,hayir:0},()=>toast('Anket sıfırlandı.'));
+  else toast('Firebase bağlantısı yok.',true);
+}
+function resetSupport(){
+  const r=fbRef('ecoway/support');
+  if(r) r.set(0,()=>toast('Destek sıfırlandı.'));
+  else toast('Firebase bağlantısı yok.',true);
+}
+function resetComments(){
+  const r=fbRef('ecoway/comments');
+  if(r) r.remove(()=>toast('Tüm yorumlar silindi.'));
+  else toast('Firebase bağlantısı yok.',true);
+}
+function resetDonations(){
+  const r=fbRef('ecoway/donations');
+  if(r){
+    r.remove(()=>toast('Tüm bağış kayıtları silindi.'));
+  } else {
+    localStorage.removeItem('eco_donations_v1');
+    allDonations=[];
+    renderDonations();
+    toast('Tüm bağış kayıtları silindi.');
+  }
+}
+
+function esc(s){
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

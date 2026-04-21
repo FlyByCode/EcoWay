@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EcoWay – Destek</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
+<style>
+:root {
+  --bg:      #0e1a16;
+  --surface: #162420;
+  --border:  #1f3530;
+  --teal:    #34d399;
+  --green:   #4ade80;
+  --text:    #e8f0ed;
+  --muted:   #7a9e94;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: 'Source Sans 3', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+
+#pageTransition {
+  position: fixed; inset: 0; z-index: 99000;
+  background: var(--teal); transform: scaleY(0); transform-origin: bottom;
+  transition: transform .45s cubic-bezier(.77,0,.18,1); pointer-events: none;
+}
+#pageTransition.active { transform: scaleY(1); transform-origin: top; }
+
+#scrollProgress {
+  position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+  background: linear-gradient(90deg, var(--teal), #7c3aed);
+  z-index: 9999; transition: width .1s linear;
+}
+
+/* NAV */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; gap: 1.5rem;
+  padding: .9rem 2rem;
+  background: rgba(14,26,22,.88); backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-logo { font-family: 'Lora', serif; font-size: 1.3rem; font-weight: 700; color: var(--teal); letter-spacing: -.5px; margin-right: auto; text-decoration: none; }
+.nav-links { list-style: none; display: flex; gap: 1.4rem; }
+.nav-links a { text-decoration: none; color: var(--muted); font-size: .9rem; font-weight: 600; transition: color .2s; }
+.nav-links a:hover, .nav-links a.active { color: var(--teal); }
+.nav-cta { background: var(--teal); color: #0e1a16; border: none; padding: .45rem 1.1rem; border-radius: 50px; font-size: .85rem; font-weight: 700; transition: opacity .2s; text-decoration: none; }
+.nav-cta:hover { opacity: .85; }
+.hamburger { display: none; flex-direction: column; gap: 5px; background: none; border: none; padding: .4rem; z-index: 200; cursor: pointer; }
+.hamburger span { display: block; width: 22px; height: 2px; background: var(--text); border-radius: 2px; transition: transform .3s, opacity .3s; }
+.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+.mobile-nav {
+  display: none; flex-direction: column; gap: .2rem;
+  position: fixed; top: 0; right: -100%; width: 72vw; max-width: 300px;
+  height: 100vh; background: var(--surface); padding: 5rem 2rem 2rem;
+  z-index: 99; transition: right .35s cubic-bezier(.77,0,.18,1);
+  border-left: 1px solid var(--border); box-shadow: -8px 0 32px rgba(0,0,0,.4);
+}
+.mobile-nav.open { right: 0; }
+.mobile-nav a { color: var(--text); text-decoration: none; font-size: 1.1rem; font-weight: 600; padding: .75rem .5rem; border-bottom: 1px solid var(--border); transition: color .2s; }
+.mobile-nav a:hover { color: var(--teal); }
+.mob-cta { margin-top: 1.5rem; background: var(--teal); color: #0e1a16; border: none; padding: .7rem 1.5rem; border-radius: 50px; font-size: 1rem; font-weight: 700; width: 100%; text-decoration: none; display: block; text-align: center; }
+
+/* HERO */
+.page-hero { padding: 6rem 2rem 4rem; text-align: center; position: relative; overflow: hidden; }
+.page-hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 600px 300px at 50% 0%, rgba(52,211,153,.08), transparent 70%); pointer-events: none; }
+.page-hero h1 { font-family: 'Lora', serif; font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 700; line-height: 1.15; background: linear-gradient(135deg, var(--teal), var(--green)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 1rem; }
+.page-hero p { color: var(--muted); font-size: 1.1rem; max-width: 560px; margin: 0 auto; }
+
+/* COUNTER */
+.counter-strip { display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap; padding: 2rem 2rem 4rem; max-width: 900px; margin: 0 auto; }
+.counter-item { text-align: center; }
+.counter-num { font-family: 'Lora', serif; font-size: 2.8rem; font-weight: 700; color: var(--teal); line-height: 1; }
+.counter-label { color: var(--muted); font-size: .9rem; margin-top: .3rem; }
+
+/* TIERS */
+.tiers-section { max-width: 1100px; margin: 0 auto; padding: 0 2rem 5rem; }
+.section-title { font-family: 'Lora', serif; font-size: 1.8rem; text-align: center; margin-bottom: .6rem; }
+.section-sub { text-align: center; color: var(--muted); margin-bottom: 3rem; font-size: .95rem; }
+.tiers-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.6rem; }
+.tier-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-lg); padding: 2rem 1.6rem; display: flex; flex-direction: column; gap: 1rem; transition: border-color .3s, transform .3s; position: relative; overflow: hidden; }
+.tier-card:hover { border-color: var(--teal); transform: translateY(-6px); }
+.tier-card.featured { border-color: var(--teal); }
+.tier-card.featured::before { content: 'En Popüler'; position: absolute; top: 1rem; right: 1rem; background: var(--teal); color: #0e1a16; font-size: .7rem; font-weight: 700; padding: .2rem .6rem; border-radius: 50px; }
+.tier-icon { font-size: 2.4rem; }
+.tier-name { font-family: 'Lora', serif; font-size: 1.3rem; font-weight: 700; }
+.tier-price { font-family: 'Lora', serif; font-size: 2.2rem; font-weight: 700; color: var(--teal); }
+.tier-price span { font-size: 1rem; color: var(--muted); font-family: 'Source Sans 3', sans-serif; }
+.tier-perks { list-style: none; display: flex; flex-direction: column; gap: .55rem; }
+.tier-perks li { font-size: .9rem; color: var(--muted); display: flex; align-items: center; gap: .5rem; }
+.tier-perks li::before { content: '✓'; color: var(--teal); font-weight: 700; flex-shrink: 0; }
+.tier-btn { margin-top: auto; padding: .75rem; border-radius: 50px; font-size: .95rem; font-weight: 700; border: 2px solid var(--teal); background: transparent; color: var(--teal); cursor: pointer; transition: background .2s, color .2s; font-family: 'Source Sans 3', sans-serif; }
+.tier-btn:hover, .tier-card.featured .tier-btn { background: var(--teal); color: #0e1a16; }
+
+/* ══════════════════════════════
+   BAĞIŞ BÖLÜMÜ
+══════════════════════════════ */
+.donation-section { max-width: 820px; margin: 0 auto; padding: 0 2rem 5rem; }
+.donation-wrap { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-lg); padding: 2.5rem; }
+.donation-title { font-family: 'Lora', serif; font-size: 1.5rem; margin-bottom: .5rem; }
+.donation-sub { color: var(--muted); font-size: .9rem; margin-bottom: 2rem; }
+
+/* Miktar seçici */
+.amount-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; margin-bottom: 1.2rem; }
+.amount-btn {
+  background: var(--bg); border: 1.5px solid var(--border);
+  color: var(--text); border-radius: var(--radius-sm);
+  padding: .7rem; font-size: 1rem; font-weight: 700;
+  font-family: 'Lora', serif; cursor: pointer;
+  transition: border-color .2s, background .2s, color .2s;
+}
+.amount-btn:hover { border-color: var(--teal); }
+.amount-btn.selected { border-color: var(--teal); background: rgba(52,211,153,.12); color: var(--teal); }
+.amount-custom-wrap { display: flex; align-items: center; border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); overflow: hidden; margin-bottom: 1.8rem; transition: border-color .2s; }
+.amount-custom-wrap:focus-within { border-color: var(--teal); }
+.amount-currency { padding: .7rem 1rem; color: var(--muted); font-weight: 600; font-size: .9rem; border-right: 1px solid var(--border); }
+.amount-custom { flex: 1; background: none; border: none; color: var(--text); font-size: 1rem; padding: .7rem 1rem; font-family: 'Source Sans 3', sans-serif; outline: none; }
+
+/* Form */
+.form-group { margin-bottom: 1.1rem; }
+.form-group label { display: block; font-size: .85rem; font-weight: 600; color: var(--muted); margin-bottom: .35rem; }
+.form-group input, .form-group select {
+  width: 100%; padding: .7rem 1rem;
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-family: 'Source Sans 3', sans-serif; font-size: .95rem;
+  transition: border-color .2s, box-shadow .2s;
+}
+.form-group input:focus, .form-group select:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(52,211,153,.12); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.btn-donate {
+  width: 100%; padding: .9rem; background: var(--teal); color: #0e1a16;
+  border: none; border-radius: 50px; font-size: 1.05rem; font-weight: 700;
+  cursor: pointer; transition: opacity .2s, transform .2s; margin-top: .5rem;
+  font-family: 'Source Sans 3', sans-serif;
+}
+.btn-donate:hover { opacity: .88; transform: translateY(-2px); }
+.secure-note { text-align: center; color: var(--muted); font-size: .78rem; margin-top: .85rem; }
+.secure-note span { color: var(--teal); }
+
+/* Bağış özet chip */
+.donation-summary {
+  background: rgba(52,211,153,.07); border: 1px solid rgba(52,211,153,.2);
+  border-radius: var(--radius-sm); padding: .75rem 1.1rem;
+  font-size: .88rem; color: var(--muted); margin-bottom: 1.5rem; display: none;
+}
+.donation-summary strong { color: var(--teal); }
+
+/* ══════════════════════════════
+   SAHTE ÖDEME MODALI
+══════════════════════════════ */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.75); backdrop-filter: blur(6px);
+  z-index: 500; display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity .3s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal-box {
+  background: #1a2b24; border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg); padding: 0;
+  width: 94%; max-width: 440px;
+  transform: scale(.94); transition: transform .3s;
+  overflow: hidden;
+}
+.modal-overlay.open .modal-box { transform: scale(1); }
+
+/* Modal üst bar */
+.modal-header {
+  background: #0e1a16; padding: 1.1rem 1.5rem;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+.modal-logo { font-family: 'Lora', serif; font-size: 1rem; font-weight: 700; color: var(--teal); }
+.modal-secure { display: flex; align-items: center; gap: .4rem; font-size: .75rem; color: var(--muted); }
+.modal-secure::before { content: '🔒'; font-size: .85rem; }
+.modal-close { background: none; border: none; color: var(--muted); font-size: 1.3rem; cursor: pointer; line-height: 1; }
+.modal-close:hover { color: var(--text); }
+
+/* Modal içerik */
+.modal-body { padding: 1.8rem 1.5rem; }
+.modal-amount-display { text-align: center; margin-bottom: 1.6rem; }
+.modal-amount-label { font-size: .8rem; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+.modal-amount-val { font-family: 'Lora', serif; font-size: 2.4rem; font-weight: 700; color: var(--teal); }
+
+/* Kart form */
+.card-field-wrap { margin-bottom: 1rem; }
+.card-field-wrap label { display: block; font-size: .8rem; font-weight: 600; color: var(--muted); margin-bottom: .35rem; }
+.card-input {
+  width: 100%; padding: .75rem 1rem;
+  background: #0e1a16; border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-family: 'Source Sans 3', sans-serif; font-size: .95rem;
+  transition: border-color .2s, box-shadow .2s; outline: none;
+  letter-spacing: .5px;
+}
+.card-input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(52,211,153,.12); }
+.card-row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+.card-icons { display: flex; gap: .5rem; align-items: center; margin-bottom: 1.2rem; }
+.card-icon { background: #0e1a16; border: 1px solid var(--border); border-radius: 6px; padding: .28rem .6rem; font-size: .78rem; font-weight: 700; color: var(--muted); }
+.card-icon.visa { color: #1a73e8; }
+.card-icon.mc { color: #e2472a; }
+.card-icon.troy { color: var(--teal); }
+
+/* Ödeme butonu */
+.btn-pay {
+  width: 100%; padding: .9rem; background: var(--teal); color: #0e1a16;
+  border: none; border-radius: 50px; font-size: 1rem; font-weight: 700;
+  cursor: pointer; transition: opacity .2s, transform .1s; font-family: 'Source Sans 3', sans-serif;
+  display: flex; align-items: center; justify-content: center; gap: .6rem;
+}
+.btn-pay:hover { opacity: .88; }
+.btn-pay:active { transform: scale(.98); }
+.btn-pay.loading { opacity: .7; pointer-events: none; }
+.pay-spinner { width: 18px; height: 18px; border: 2px solid rgba(14,26,22,.4); border-top-color: #0e1a16; border-radius: 50%; animation: spin .7s linear infinite; display: none; }
+.btn-pay.loading .pay-spinner { display: block; }
+.modal-footer-note { text-align: center; font-size: .74rem; color: var(--muted); margin-top: 1rem; line-height: 1.5; }
+
+/* Başarı ekranı */
+.modal-success { padding: 2.5rem 1.5rem; text-align: center; display: none; }
+.success-icon { font-size: 3.5rem; margin-bottom: 1rem; animation: popIn .5s cubic-bezier(.175,.885,.32,1.275); }
+.success-title { font-family: 'Lora', serif; font-size: 1.5rem; font-weight: 700; color: var(--teal); margin-bottom: .5rem; }
+.success-desc { color: var(--muted); font-size: .9rem; line-height: 1.6; margin-bottom: 1.5rem; }
+.success-ref { background: rgba(52,211,153,.07); border: 1px solid rgba(52,211,153,.2); border-radius: var(--radius-sm); padding: .65rem 1.1rem; font-size: .85rem; color: var(--muted); margin-bottom: 1.5rem; }
+.success-ref strong { color: var(--teal); font-family: monospace; }
+.btn-success-close { background: var(--teal); color: #0e1a16; border: none; border-radius: 50px; padding: .75rem 2.5rem; font-size: .95rem; font-weight: 700; cursor: pointer; font-family: 'Source Sans 3', sans-serif; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes popIn { from { opacity: 0; transform: scale(.5); } to { opacity: 1; transform: scale(1); } }
+
+/* VOLUNTEER */
+.volunteer-section { max-width: 900px; margin: 0 auto; padding: 0 2rem 5rem; }
+.volunteer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; }
+.vol-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1.5rem; display: flex; gap: 1rem; align-items: flex-start; transition: border-color .3s, transform .3s; }
+.vol-card:hover { border-color: var(--teal); transform: translateY(-3px); }
+.vol-icon { font-size: 2rem; flex-shrink: 0; }
+.vol-title { font-weight: 700; font-size: .95rem; margin-bottom: .3rem; }
+.vol-desc { color: var(--muted); font-size: .85rem; line-height: 1.6; }
+.vol-form-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 2rem; margin-top: 2.5rem; }
+.vol-form-wrap h3 { font-family: 'Lora', serif; font-size: 1.3rem; margin-bottom: 1.4rem; }
+.form-group textarea { width: 100%; padding: .7rem 1rem; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: 'Source Sans 3', sans-serif; font-size: .95rem; transition: border-color .2s, box-shadow .2s; min-height: 100px; resize: vertical; }
+.form-group textarea:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(52,211,153,.12); }
+.btn-vol { padding: .85rem 2rem; background: var(--teal); color: #0e1a16; border: none; border-radius: 50px; font-size: .95rem; font-weight: 700; transition: opacity .2s, transform .2s; cursor: pointer; font-family: 'Source Sans 3', sans-serif; }
+.btn-vol:hover { opacity: .85; transform: translateY(-2px); }
+
+/* FAQ */
+.faq-section { max-width: 800px; margin: 0 auto; padding: 0 2rem 6rem; }
+.faq-item { border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 1rem; overflow: hidden; transition: border-color .3s; }
+.faq-item:hover { border-color: var(--teal); }
+.faq-q { width: 100%; text-align: left; padding: 1.1rem 1.4rem; background: var(--surface); border: none; color: var(--text); font-family: 'Source Sans 3', sans-serif; font-size: .95rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center; gap: 1rem; cursor: pointer; }
+.faq-q::after { content: '+'; color: var(--teal); font-size: 1.3rem; flex-shrink: 0; transition: transform .3s; }
+.faq-item.open .faq-q::after { transform: rotate(45deg); }
+.faq-a { max-height: 0; overflow: hidden; transition: max-height .4s ease, padding .3s; padding: 0 1.4rem; color: var(--muted); font-size: .9rem; line-height: 1.7; background: var(--bg); }
+.faq-item.open .faq-a { max-height: 300px; padding: 1rem 1.4rem 1.2rem; }
+
+/* TOAST */
+#toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--surface); color: var(--text); padding: .85rem 1.3rem; border-radius: var(--radius-md); font-size: .85rem; transform: translateY(80px); opacity: 0; transition: all .3s; z-index: 9999; max-width: 290px; border-left: 3px solid var(--teal); box-shadow: 0 8px 24px rgba(0,0,0,.2); }
+#toast.show { transform: translateY(0); opacity: 1; }
+
+/* FOOTER */
+footer { background: var(--surface); border-top: 1px solid var(--border); padding: 3rem 2rem 2rem; text-align: center; }
+footer .footer-logo { font-family: 'Lora', serif; font-size: 1.4rem; font-weight: 700; color: var(--teal); margin-bottom: .8rem; display: block; text-decoration: none; }
+footer p { color: var(--muted); font-size: .85rem; }
+
+/* REVEAL */
+.reveal { opacity: 0; transform: translateY(30px); transition: opacity .7s ease, transform .7s ease; }
+.reveal.visible { opacity: 1; transform: none; }
+
+@media (max-width: 900px) { .tiers-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 768px) {
+  .nav-links, .nav-cta { display: none; }
+  .hamburger { display: flex; }
+  .mobile-nav { display: flex; }
+  .tiers-grid, .volunteer-grid, .form-row, .card-row, .amount-grid { grid-template-columns: 1fr 1fr; }
+  .counter-strip { gap: 1.5rem; }
+  .amount-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .amount-grid { grid-template-columns: 1fr 1fr; }
+  .modal-box { max-width: 98vw; }
+}
+</style>
+</head>
+<body>
+
+<div id="pageTransition"></div>
+<div id="scrollProgress"></div>
+
+<nav>
+  <a href="index.html" class="nav-logo">EcoWay</a>
+  <ul class="nav-links">
+    <li><a href="index.html">Ana Sayfa</a></li>
+    <li><a href="index.html#sorun">Sorun</a></li>
+    <li><a href="index.html#nasil">Çalışma Prensibi</a></li>
+    <li><a href="index.html#teknoloji">Teknoloji</a></li>
+    <li><a href="index.html#veri">Veriler</a></li>
+    <li><a href="index.html#oylama">Anket</a></li>
+    <li><a href="iletisim.html">İletişim</a></li>
+    <li><a href="destek.html" class="active">Destek</a></li>
+  </ul>
+  <a href="#bagis" class="nav-cta">Bağış Yap</a>
+  <button class="hamburger" id="hamburgerBtn" aria-label="Menüyü aç" onclick="toggleMobileNav()">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="mobile-nav" id="mobileNav">
+  <a href="index.html" onclick="closeMobileNav()">Ana Sayfa</a>
+  <a href="index.html#sorun" onclick="closeMobileNav()">Sorun</a>
+  <a href="index.html#nasil" onclick="closeMobileNav()">Çalışma Prensibi</a>
+  <a href="index.html#teknoloji" onclick="closeMobileNav()">Teknoloji</a>
+  <a href="index.html#veri" onclick="closeMobileNav()">Veriler</a>
+  <a href="index.html#oylama" onclick="closeMobileNav()">Anket</a>
+  <a href="iletisim.html" onclick="closeMobileNav()">İletişim</a>
+  <a href="destek.html" onclick="closeMobileNav()">Destek</a>
+  <a href="#bagis" class="mob-cta" onclick="closeMobileNav()">Bağış Yap</a>
+</div>
+
+<!-- HERO -->
+<section class="page-hero">
+  <h1>EcoWay'i Destekleyin</h1>
+  <p>Projeye destek vererek daha temiz bir gelecek için adım atın. Birlikte daha büyük değişimler yaratabiliriz.</p>
+</section>
+
+<!-- SAYAÇLAR -->
+<div class="counter-strip">
+  <div class="counter-item reveal">
+    <div class="counter-num" id="cntSupport">0</div>
+    <div class="counter-label">Destekçi</div>
+  </div>
+  <div class="counter-item reveal">
+    <div class="counter-num" id="cntDonations">0</div>
+    <div class="counter-label">Bağış Yapıldı</div>
+  </div>
+  <div class="counter-item reveal">
+    <div class="counter-num">12</div>
+    <div class="counter-label">Şehirde Test Edildi</div>
+  </div>
+  <div class="counter-item reveal">
+    <div class="counter-num">98%</div>
+    <div class="counter-label">Memnuniyet Oranı</div>
+  </div>
+</div>
+
+<!-- DESTEK SEVİYELERİ -->
+<section class="tiers-section">
+  <h2 class="section-title reveal">Destek Seviyeleri</h2>
+  <p class="section-sub reveal">Projeye katkı sağlamak için size uygun bir seviye seçin.</p>
+  <div class="tiers-grid">
+    <div class="tier-card reveal">
+      <div class="tier-icon">🌱</div>
+      <div class="tier-name">Tohum</div>
+      <div class="tier-price">Ücretsiz <span>/ her zaman</span></div>
+      <ul class="tier-perks">
+        <li>Projeyi sosyal medyada paylaş</li>
+        <li>Anketlere katıl ve oy ver</li>
+        <li>Yorum bırak ve geri bildirim ver</li>
+        <li>CO2 hesaplayıcısını kullan</li>
+      </ul>
+      <button class="tier-btn" onclick="document.getElementById('volForm').scrollIntoView({behavior:'smooth'})">Başla →</button>
+    </div>
+    <div class="tier-card featured reveal">
+      <div class="tier-icon">🌿</div>
+      <div class="tier-name">Destekçi</div>
+      <div class="tier-price">Sembolik <span>/ destek</span></div>
+      <ul class="tier-perks">
+        <li>Tüm Tohum özellikleri</li>
+        <li>Destekçi rozeti ve teşekkür</li>
+        <li>Proje güncellemelerinden haberdar ol</li>
+        <li>Erken erişim duyuruları</li>
+        <li>Ekip toplantısına davet</li>
+      </ul>
+      <button class="tier-btn" onclick="document.getElementById('bagis').scrollIntoView({behavior:'smooth'})">Bağış Yap →</button>
+    </div>
+    <div class="tier-card reveal">
+      <div class="tier-icon">🌳</div>
+      <div class="tier-name">Ortak</div>
+      <div class="tier-price">Kurumsal <span>/ iş birliği</span></div>
+      <ul class="tier-perks">
+        <li>Tüm Destekçi özellikleri</li>
+        <li>Logonuzu sitede göster</li>
+        <li>Ortak proje geliştirme</li>
+        <li>Özel brifing ve demo</li>
+        <li>Raporlara erişim</li>
+      </ul>
+      <button class="tier-btn" onclick="navigateTo('iletisim.html')">İletişime Geç →</button>
+    </div>
+  </div>
+</section>
+
+<!-- BAĞIŞ BÖLÜMÜ -->
+<section class="donation-section" id="bagis">
+  <div class="section-title reveal" style="text-align:center;margin-bottom:.6rem;">Bağış Yap</div>
+  <p class="section-sub reveal">Her katkı EcoWay'in büyümesine doğrudan destek olur. Güvenli ödeme simülasyonu.</p>
+  <div class="donation-wrap reveal">
+    <div class="donation-title">💚 Projeye Destek Ol</div>
+    <p class="donation-sub">Bağış miktarınızı seçin veya özel bir tutar girin. Tüm bağışlar admin paneline iletilir.</p>
+
+    <!-- Miktar seçici -->
+    <div class="amount-grid">
+      <button class="amount-btn" onclick="selectAmount(20)">₺20</button>
+      <button class="amount-btn selected" onclick="selectAmount(50)">₺50</button>
+      <button class="amount-btn" onclick="selectAmount(100)">₺100</button>
+      <button class="amount-btn" onclick="selectAmount(250)">₺250</button>
+    </div>
+    <div class="amount-custom-wrap">
+      <span class="amount-currency">₺</span>
+      <input type="number" class="amount-custom" id="customAmount" placeholder="Özel tutar girin..." min="5" max="100000" oninput="onCustomAmount()">
+    </div>
+
+    <!-- Kişi bilgileri -->
+    <div class="form-row">
+      <div class="form-group">
+        <label>Ad Soyad</label>
+        <input type="text" id="donorName" placeholder="Ali Yılmaz" maxlength="60">
+      </div>
+      <div class="form-group">
+        <label>E-posta</label>
+        <input type="email" id="donorEmail" placeholder="ali@email.com" maxlength="80">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Mesaj (isteğe bağlı)</label>
+      <input type="text" id="donorMessage" placeholder="Projeye başarılar!" maxlength="200">
+    </div>
+
+    <!-- Özet -->
+    <div class="donation-summary" id="donationSummary">
+      <strong id="summaryName">Ali</strong>, <strong id="summaryAmount">₺50</strong> bağış yapmak üzeresiniz.
+    </div>
+
+    <button class="btn-donate" onclick="openPaymentModal()">
+      🔒 Güvenli Ödemeye Geç
+    </button>
+    <p class="secure-note"><span>🔒 SSL ile şifreli</span> · Demo sistem — gerçek ödeme alınmaz</p>
+  </div>
+</section>
+
+<!-- GÖNÜLLÜ BÖLÜMÜ -->
+<section class="volunteer-section">
+  <h2 class="section-title reveal">Gönüllü Ol</h2>
+  <p class="section-sub reveal">Para değil, zaman ve yetenek bağışlayın. Her katkı değerlidir.</p>
+  <div class="volunteer-grid">
+    <div class="vol-card reveal">
+      <div class="vol-icon">💻</div>
+      <div>
+        <div class="vol-title">Yazılım Geliştirme</div>
+        <div class="vol-desc">Frontend/backend geliştirme, mobil uygulama, IoT entegrasyonu ve algoritma optimizasyonu.</div>
+      </div>
+    </div>
+    <div class="vol-card reveal">
+      <div class="vol-icon">📊</div>
+      <div>
+        <div class="vol-title">Veri Analizi</div>
+        <div class="vol-desc">Trafik verileri, emisyon hesaplamaları ve şehir bazlı analiz çalışmaları.</div>
+      </div>
+    </div>
+    <div class="vol-card reveal">
+      <div class="vol-icon">🎨</div>
+      <div>
+        <div class="vol-title">Tasarım ve UX</div>
+        <div class="vol-desc">Arayüz tasarımı, infografik üretimi ve marka kimliği geliştirme.</div>
+      </div>
+    </div>
+    <div class="vol-card reveal">
+      <div class="vol-icon">📢</div>
+      <div>
+        <div class="vol-title">İletişim ve Sosyal Medya</div>
+        <div class="vol-desc">İçerik üretimi, sosyal medya yönetimi ve kamuoyu farkındalık çalışmaları.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="vol-form-wrap reveal" id="volForm">
+    <h3>Gönüllü Başvuru Formu</h3>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Adınız Soyadınız</label>
+        <input type="text" id="volName" placeholder="Ali Yılmaz">
+      </div>
+      <div class="form-group">
+        <label>E-posta</label>
+        <input type="email" id="volEmail" placeholder="ali@email.com">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>İlgilendiğiniz Alan</label>
+      <select id="volArea">
+        <option value="">Alan seçin...</option>
+        <option>Yazılım Geliştirme</option>
+        <option>Veri Analizi</option>
+        <option>Tasarım ve UX</option>
+        <option>İletişim ve Sosyal Medya</option>
+        <option>Diğer</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Kendinizden kısaca bahsedin</label>
+      <textarea id="volAbout" placeholder="Yetenekleriniz, deneyimleriniz ve EcoWay'e nasıl katkı sağlamak istediğiniz..."></textarea>
+    </div>
+    <button class="btn-vol" onclick="submitVol()">Başvur →</button>
+  </div>
+</section>
+
+<!-- SSS -->
+<section class="faq-section">
+  <h2 class="section-title reveal">Sıkça Sorulan Sorular</h2>
+  <div class="faq-item reveal">
+    <button class="faq-q" onclick="toggleFaq(this)">EcoWay nedir ve ne amaçla geliştirildi?</button>
+    <div class="faq-a">EcoWay, Türkiye'deki şehirlerde trafik yönetimini optimize ederek CO2 emisyonlarını azaltmayı hedefleyen bir öğrenci projesidir. Yapay zeka tabanlı sinyal kontrolü ve sürücü bilgilendirme sistemiyle çalışır.</div>
+  </div>
+  <div class="faq-item reveal">
+    <button class="faq-q" onclick="toggleFaq(this)">Bağış sistemi gerçek mi?</button>
+    <div class="faq-a">Hayır, bağış sistemi tamamen simülasyon amaçlıdır. Gerçek bir ödeme alınmaz. Kart bilgileriniz hiçbir yere gönderilmez, bağış kaydı sadece admin paneline iletilir.</div>
+  </div>
+  <div class="faq-item reveal">
+    <button class="faq-q" onclick="toggleFaq(this)">Projeye nasıl destek olabilirim?</button>
+    <div class="faq-a">Projeyi sosyal medyada paylaşarak, anketlere katılarak, yorum bırakarak veya gönüllü ekibimize katılarak destek olabilirsiniz. Kurumsal iş birliği için İletişim sayfasından bize ulaşabilirsiniz.</div>
+  </div>
+  <div class="faq-item reveal">
+    <button class="faq-q" onclick="toggleFaq(this)">Verilerim güvende mi?</button>
+    <div class="faq-a">Evet. Yalnızca anonim kullanım verileri (oy, yorum, bağış kaydı) Firebase üzerinde saklanır. Kişisel bilgileriniz asla üçüncü taraflarla paylaşılmaz.</div>
+  </div>
+  <div class="faq-item reveal">
+    <button class="faq-q" onclick="toggleFaq(this)">Gönüllülük için herhangi bir ön koşul var mı?</button>
+    <div class="faq-a">Hayır! Her seviyeden katılımcıya kapılarımız açık. Önemli olan istekli olmanız ve projeye katkı sağlamak istemenizdir.</div>
+  </div>
+</section>
+
+<div id="toast"></div>
+
+<!-- ══════════════════════
+     SAHTE ÖDEME MODALI
+══════════════════════ -->
+<div class="modal-overlay" id="payModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-logo">EcoWay Pay</div>
+      <div class="modal-secure">Güvenli Ödeme</div>
+      <button class="modal-close" onclick="closePaymentModal()">×</button>
+    </div>
+
+    <!-- Ödeme formu -->
+    <div class="modal-body" id="modalFormBody">
+      <div class="modal-amount-display">
+        <div class="modal-amount-label">Bağış Tutarı</div>
+        <div class="modal-amount-val" id="modalAmountDisplay">₺50</div>
+      </div>
+
+      <div class="card-icons">
+        <span class="card-icon visa">VISA</span>
+        <span class="card-icon mc">MC</span>
+        <span class="card-icon troy">TROY</span>
+        <span style="font-size:.72rem;color:var(--muted);margin-left:auto;">Demo Sistemi</span>
+      </div>
+
+      <div class="card-field-wrap">
+        <label>Kart Numarası</label>
+        <input type="text" class="card-input" id="cardNumber" placeholder="0000 0000 0000 0000" maxlength="19" oninput="formatCard(this)">
+      </div>
+      <div class="card-row">
+        <div class="card-field-wrap">
+          <label>Son Kullanma Tarihi</label>
+          <input type="text" class="card-input" id="cardExpiry" placeholder="AA/YY" maxlength="5" oninput="formatExpiry(this)">
+        </div>
+        <div class="card-field-wrap">
+          <label>CVV</label>
+          <input type="text" class="card-input" id="cardCvv" placeholder="•••" maxlength="3" oninput="this.value=this.value.replace(/\D/g,'')">
+        </div>
+      </div>
+      <div class="card-field-wrap">
+        <label>Kart Üzerindeki İsim</label>
+        <input type="text" class="card-input" id="cardName" placeholder="ALİ YILMAZ" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()">
+      </div>
+
+      <button class="btn-pay" id="btnPay" onclick="processPayment()">
+        <span id="payBtnText">₺50 Bağış Yap</span>
+        <div class="pay-spinner" id="paySpinner"></div>
+      </button>
+      <p class="modal-footer-note">Bu bir simülasyon sistemidir. Gerçek ödeme alınmaz. Kart bilgileriniz hiçbir sunucuya gönderilmez.</p>
+    </div>
+
+    <!-- Başarı ekranı -->
+    <div class="modal-success" id="modalSuccess">
+      <div class="success-icon">✅</div>
+      <div class="success-title">Bağışınız Alındı!</div>
+      <div class="success-desc">Teşekkürler! Desteğiniz EcoWay'in büyümesine katkı sağlayacak. Admin ekibimiz en kısa sürede sizinle iletişime geçecek.</div>
+      <div class="success-ref">İşlem Referansı: <strong id="successRef">ECO-00000</strong></div>
+      <button class="btn-success-close" onclick="closePaymentModal()">Kapat</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <a href="index.html" class="footer-logo">EcoWay</a>
+  <p>© 2026 EcoWay — Trafik Yönetimi ve CO2 Azaltım Projesi</p>
+  <p style="margin-top:.4rem;">
+    <a href="index.html" style="color:var(--teal);text-decoration:none;margin:0 .6rem">Ana Sayfa</a>
+    <a href="iletisim.html" style="color:var(--teal);text-decoration:none;margin:0 .6rem">İletişim</a>
+    <a href="destek.html" style="color:var(--teal);text-decoration:none;margin:0 .6rem">Destek</a>
+  </p>
+</footer>
+
+<script>
+// ── SCROLL PROGRESS ──
+window.addEventListener('scroll', () => {
+  const sp = document.getElementById('scrollProgress');
+  const pct = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
+  if (sp) sp.style.width = Math.min(100, pct) + '%';
+});
+
+// ── MOBİL MENÜ ──
+function toggleMobileNav() {
+  document.getElementById('mobileNav').classList.toggle('open');
+  document.getElementById('hamburgerBtn').classList.toggle('open');
+}
+function closeMobileNav() {
+  document.getElementById('mobileNav').classList.remove('open');
+  document.getElementById('hamburgerBtn').classList.remove('open');
+}
+
+// ── TOAST ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ── SAYFA GEÇİŞİ ──
+function navigateTo(href) {
+  const pt = document.getElementById('pageTransition');
+  pt.classList.add('active');
+  setTimeout(() => { window.location.href = href; }, 460);
+}
+
+// ── REVEAL ──
+const revealObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('visible'); revealObs.unobserve(e.target); }
+  });
+}, { threshold: .12 });
+document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+// ── COUNTER ANİMASYON ──
+function animateCounter(el, target) {
+  let start = 0;
+  const duration = 1800;
+  const step = ts => {
+    if (!start) start = ts;
+    const progress = Math.min((ts - start) / duration, 1);
+    const eased = 1 - Math.pow(2, -10 * progress);
+    el.textContent = Math.floor(eased * target) + '+';
+    if (progress < 1) requestAnimationFrame(step);
+    else el.textContent = target + '+';
+  };
+  requestAnimationFrame(step);
+}
+
+// Firebase'den destekçi ve bağış sayısını oku
+(function loadCounters() {
+  const supEl  = document.getElementById('cntSupport');
+  const donEl  = document.getElementById('cntDonations');
+  let supAnimated = false, donAnimated = false;
+
+  const supRef = fbRef('ecoway/support');
+  if (supRef) {
+    supRef.on('value', snap => {
+      const v = snap.val() || 0;
+      supEl.textContent = v.toLocaleString('tr-TR') + '+';
+    });
+  }
+  const donRef = fbRef('ecoway/donations');
+  if (donRef) {
+    donRef.on('value', snap => {
+      const count = snap.val() ? Object.keys(snap.val()).length : 0;
+      donEl.textContent = count + '+';
+    });
+  }
+
+  // Sayaç girince animasyon
+  const counterObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        if (!supAnimated && !supRef) { supAnimated = true; animateCounter(supEl, 247); }
+        if (!donAnimated && !donRef) { donAnimated = true; animateCounter(donEl, 38); }
+        counterObs.disconnect();
+      }
+    });
+  }, { threshold: .5 });
+  const strip = document.querySelector('.counter-strip');
+  if (strip) counterObs.observe(strip);
+})();
+
+// ── BAĞIŞ MİKTARI SEÇİCİ ──
+let selectedAmount = 50;
+
+function selectAmount(val) {
+  selectedAmount = val;
+  document.getElementById('customAmount').value = '';
+  document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  updateSummary();
+}
+
+function onCustomAmount() {
+  const v = parseInt(document.getElementById('customAmount').value);
+  if (v > 0) {
+    selectedAmount = v;
+    document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('selected'));
+  }
+  updateSummary();
+}
+
+function updateSummary() {
+  const name = document.getElementById('donorName').value.trim();
+  const summary = document.getElementById('donationSummary');
+  if (selectedAmount > 0) {
+    summary.style.display = 'block';
+    document.getElementById('summaryAmount').textContent = '₺' + selectedAmount.toLocaleString('tr-TR');
+    document.getElementById('summaryName').textContent = name || 'Siz';
+  } else {
+    summary.style.display = 'none';
+  }
+}
+document.getElementById('donorName').addEventListener('input', updateSummary);
+updateSummary();
+
+// ── ÖDEME MODALI ──
+function openPaymentModal() {
+  const name  = document.getElementById('donorName').value.trim();
+  const email = document.getElementById('donorEmail').value.trim();
+  if (!name)  { showToast('Lütfen adınızı girin.'); return; }
+  if (!email || !email.includes('@')) { showToast('Geçerli bir e-posta girin.'); return; }
+  if (!selectedAmount || selectedAmount < 5) { showToast('Lütfen en az ₺5 bir miktar girin.'); return; }
+
+  document.getElementById('modalAmountDisplay').textContent = '₺' + selectedAmount.toLocaleString('tr-TR');
+  document.getElementById('payBtnText').textContent = '₺' + selectedAmount.toLocaleString('tr-TR') + ' Bağış Yap';
+
+  // Formu sıfırla
+  document.getElementById('cardNumber').value = '';
+  document.getElementById('cardExpiry').value = '';
+  document.getElementById('cardCvv').value = '';
+  document.getElementById('cardName').value = '';
+  document.getElementById('modalFormBody').style.display = 'block';
+  document.getElementById('modalSuccess').style.display  = 'none';
+
+  const btn = document.getElementById('btnPay');
+  btn.classList.remove('loading');
+
+  document.getElementById('payModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closePaymentModal() {
+  document.getElementById('payModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// Kart format fonksiyonları
+function formatCard(el) {
+  let v = el.value.replace(/\D/g, '').slice(0, 16);
+  el.value = v.replace(/(.{4})/g, '$1 ').trim();
+}
+function formatExpiry(el) {
+  let v = el.value.replace(/\D/g, '').slice(0, 4);
+  if (v.length >= 3) v = v.slice(0,2) + '/' + v.slice(2);
+  el.value = v;
+}
+
+// ESC ile kapat
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closePaymentModal();
+});
+document.getElementById('payModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('payModal')) closePaymentModal();
+});
+
+// ── ÖDEME İŞLEMİ ──
+function processPayment() {
+  // Basit doğrulama
+  const cardNum = document.getElementById('cardNumber').value.replace(/\s/g, '');
+  const expiry  = document.getElementById('cardExpiry').value;
+  const cvv     = document.getElementById('cardCvv').value;
+  const cName   = document.getElementById('cardName').value.trim();
+
+  if (cardNum.length < 16) { showToast('Geçerli bir kart numarası girin.'); return; }
+  if (expiry.length < 5)   { showToast('Son kullanma tarihini girin.'); return; }
+  if (cvv.length < 3)      { showToast('CVV kodunu girin.'); return; }
+  if (!cName)              { showToast('Kart üzerindeki ismi girin.'); return; }
+
+  const btn = document.getElementById('btnPay');
+  btn.classList.add('loading');
+  document.getElementById('payBtnText').textContent = 'İşleniyor...';
+
+  // Simüle ödeme işlemi — 2 saniye bekleme
+  setTimeout(() => {
+    saveDonationToFirebase();
+  }, 2000);
+}
+
+function saveDonationToFirebase() {
+  const name    = document.getElementById('donorName').value.trim();
+  const email   = document.getElementById('donorEmail').value.trim();
+  const message = document.getElementById('donorMessage').value.trim();
+  const now     = new Date();
+  const refId   = 'ECO-' + now.getTime().toString().slice(-6);
+  const date    = now.toLocaleDateString('tr-TR', {day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit'});
+
+  const donation = {
+    id: refId,
+    name: name,
+    email: email,
+    message: message || '',
+    amount: selectedAmount,
+    date: date,
+    ts: now.getTime(),
+    status: 'beklemede'
+  };
+
+  const ref = fbRef('ecoway/donations/' + refId);
+  if (ref) {
+    ref.set(donation, () => showSuccess(refId));
+  } else {
+    // localStorage fallback
+    const donations = JSON.parse(localStorage.getItem('eco_donations_v1') || '[]');
+    donations.push(donation);
+    localStorage.setItem('eco_donations_v1', JSON.stringify(donations));
+    showSuccess(refId);
+  }
+}
+
+function showSuccess(refId) {
+  document.getElementById('modalFormBody').style.display = 'none';
+  document.getElementById('modalSuccess').style.display  = 'block';
+  document.getElementById('successRef').textContent = refId;
+}
+
+// ── GÖNÜLLÜ FORMU ──
+function submitVol() {
+  const name  = document.getElementById('volName').value.trim();
+  const email = document.getElementById('volEmail').value.trim();
+  const area  = document.getElementById('volArea').value;
+  const about = document.getElementById('volAbout').value.trim();
+  if (!name)  { showToast('Lütfen adınızı girin.'); return; }
+  if (!email || !email.includes('@')) { showToast('Geçerli bir e-posta girin.'); return; }
+  if (!area)  { showToast('Lütfen bir alan seçin.'); return; }
+  if (!about) { showToast('Kendinizden kısaca bahsedin.'); return; }
+  const btn = document.querySelector('.btn-vol');
+  btn.textContent = 'Gönderiliyor...'; btn.disabled = true;
+
+  const now = new Date();
+  const volData = {
+    name, email, area, about,
+    ts: now.getTime(),
+    date: now.toLocaleDateString('tr-TR', {day:'numeric', month:'long', year:'numeric'})
+  };
+  const ref = fbRef('ecoway/volunteers/' + now.getTime());
+  if (ref) {
+    ref.set(volData);
+  } else {
+    const vols = JSON.parse(localStorage.getItem('eco_volunteers_v1') || '[]');
+    vols.push(volData);
+    localStorage.setItem('eco_volunteers_v1', JSON.stringify(vols));
+  }
+
+  setTimeout(() => {
+    btn.textContent = '✓ Başvurunuz Alındı!';
+    showToast('Başvurunuz alındı! En kısa sürede sizinle iletişime geçeceğiz.');
+    document.getElementById('volName').value  = '';
+    document.getElementById('volEmail').value = '';
+    document.getElementById('volArea').value  = '';
+    document.getElementById('volAbout').value = '';
+    setTimeout(() => { btn.textContent = 'Başvur →'; btn.disabled = false; }, 3000);
+  }, 1200);
+}
+
+// ── FAQ ──
+function toggleFaq(btn) {
+  const item = btn.parentElement;
+  const wasOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+  if (!wasOpen) item.classList.add('open');
+}
+
+// ── SAYFA GEÇİŞ ANİMASYONU ──
+(function() {
+  const pt = document.getElementById('pageTransition');
+  if (!pt) return;
+  document.querySelectorAll('a[href]').forEach(a => {
+    const href = a.getAttribute('href');
+    if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto')) return;
+    a.addEventListener('click', e => {
+      e.preventDefault(); pt.classList.add('active');
+      setTimeout(() => { window.location.href = href; }, 460);
+    });
+  });
+})();
+</script>
+</body>
+</html>

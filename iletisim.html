@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EcoWay – İletişim</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #0e1a16;
+  --surface: #162420;
+  --border:  #1f3530;
+  --teal:    #34d399;
+  --green:   #4ade80;
+  --text:    #e8f0ed;
+  --muted:   #7a9e94;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Source Sans 3', sans-serif;
+  background: var(--bg); color: var(--text);
+  min-height: 100vh; overflow-x: hidden;
+}
+#pageTransition {
+  position: fixed; inset: 0; z-index: 99000;
+  background: var(--teal);
+  transform: scaleY(0); transform-origin: bottom;
+  transition: transform .45s cubic-bezier(.77,0,.18,1);
+  pointer-events: none;
+}
+#pageTransition.active { transform: scaleY(1); transform-origin: top; }
+/* SCROLL PROGRESS */
+#scrollProgress {
+  position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+  background: linear-gradient(90deg, var(--teal), #7c3aed);
+  z-index: 9999; transition: width .1s linear;
+}
+/* NAV */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; gap: 1.5rem;
+  padding: .9rem 2rem;
+  background: rgba(14,26,22,.88);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-logo {
+  font-family: 'Lora', serif; font-size: 1.3rem; font-weight: 700;
+  color: var(--teal); letter-spacing: -.5px; margin-right: auto;
+  text-decoration: none;
+}
+.nav-links { list-style: none; display: flex; gap: 1.4rem; }
+.nav-links a {
+  text-decoration: none; color: var(--muted); font-size: .9rem;
+  font-weight: 600; transition: color .2s;
+}
+.nav-links a:hover, .nav-links a.active { color: var(--teal); }
+.nav-cta {
+  background: var(--teal); color: #0e1a16; border: none;
+  padding: .45rem 1.1rem; border-radius: 50px; font-size: .85rem;
+  font-weight: 700; cursor: pointer; transition: opacity .2s;
+}
+.nav-cta:hover { opacity: .85; }
+.hamburger {
+  display: none; flex-direction: column; gap: 5px;
+  background: none; border: none; padding: .4rem; z-index: 200;
+}
+.hamburger span {
+  display: block; width: 22px; height: 2px;
+  background: var(--text); border-radius: 2px;
+  transition: transform .3s, opacity .3s;
+}
+.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+.mobile-nav {
+  display: none; flex-direction: column; gap: .2rem;
+  position: fixed; top: 0; right: -100%; width: 72vw; max-width: 300px;
+  height: 100vh; background: var(--surface); padding: 5rem 2rem 2rem;
+  z-index: 99; transition: right .35s cubic-bezier(.77,0,.18,1);
+  border-left: 1px solid var(--border); box-shadow: -8px 0 32px rgba(0,0,0,.4);
+}
+.mobile-nav.open { right: 0; }
+.mobile-nav a {
+  color: var(--text); text-decoration: none; font-size: 1.1rem;
+  font-weight: 600; padding: .75rem .5rem; border-bottom: 1px solid var(--border);
+  transition: color .2s;
+}
+.mobile-nav a:hover { color: var(--teal); }
+.mob-cta {
+  margin-top: 1.5rem; background: var(--teal); color: #0e1a16;
+  border: none; padding: .7rem 1.5rem; border-radius: 50px;
+  font-size: 1rem; font-weight: 700; width: 100%;
+}
+/* HERO MINI */
+.page-hero {
+  padding: 6rem 2rem 4rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.page-hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 600px 300px at 50% 0%, rgba(52,211,153,.08), transparent 70%);
+  pointer-events: none;
+}
+.page-hero h1 {
+  font-family: 'Lora', serif; font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 700; line-height: 1.15;
+  background: linear-gradient(135deg, var(--teal), var(--green));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 1rem;
+}
+.page-hero p {
+  color: var(--muted); font-size: 1.1rem; max-width: 560px; margin: 0 auto;
+}
+/* CONTACT SECTION */
+.contact-section {
+  max-width: 1100px; margin: 0 auto; padding: 3rem 2rem 6rem;
+  display: grid; grid-template-columns: 1fr 1.4fr; gap: 3rem; align-items: start;
+}
+.contact-info { display: flex; flex-direction: column; gap: 1.8rem; }
+.contact-info h2 {
+  font-family: 'Lora', serif; font-size: 1.6rem; font-weight: 700;
+  color: var(--text); margin-bottom: .3rem;
+}
+.contact-info p { color: var(--muted); line-height: 1.75; font-size: .95rem; }
+.contact-item {
+  display: flex; align-items: flex-start; gap: 1rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 1.2rem 1.4rem;
+  transition: border-color .3s, transform .3s;
+}
+.contact-item:hover { border-color: var(--teal); transform: translateY(-3px); }
+.contact-item-icon {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(52,211,153,.1); display: flex; align-items: center;
+  justify-content: center; font-size: 1.4rem; flex-shrink: 0;
+}
+.contact-item-text { display: flex; flex-direction: column; gap: .2rem; }
+.contact-item-title { font-weight: 700; color: var(--text); font-size: .95rem; }
+.contact-item-val { color: var(--muted); font-size: .88rem; }
+.contact-item-val a { color: var(--teal); text-decoration: none; }
+.contact-item-val a:hover { text-decoration: underline; }
+/* FORM */
+.contact-form-wrap {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 2.2rem 2rem;
+}
+.contact-form-wrap h2 {
+  font-family: 'Lora', serif; font-size: 1.5rem; font-weight: 700;
+  margin-bottom: 1.6rem; color: var(--text);
+}
+.form-group { margin-bottom: 1.2rem; }
+.form-group label {
+  display: block; font-size: .85rem; font-weight: 600;
+  color: var(--muted); margin-bottom: .4rem;
+}
+.form-group input, .form-group textarea, .form-group select {
+  width: 100%; padding: .75rem 1rem;
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-family: 'Source Sans 3', sans-serif; font-size: .95rem;
+  transition: border-color .2s, box-shadow .2s; resize: vertical;
+}
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+  outline: none; border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(52,211,153,.12);
+}
+.form-group textarea { min-height: 140px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.btn-send {
+  width: 100%; padding: .9rem; background: var(--teal); color: #0e1a16;
+  border: none; border-radius: 50px; font-size: 1rem; font-weight: 700;
+  transition: opacity .2s, transform .2s; position: relative; overflow: hidden;
+}
+.btn-send:hover { opacity: .88; transform: translateY(-2px); }
+.btn-send:active { transform: scale(.97); }
+/* TOAST */
+#toast {
+  position: fixed; bottom: 1.5rem; right: 1.5rem;
+  background: var(--surface); color: var(--text);
+  padding: .85rem 1.3rem; border-radius: var(--radius-md); font-size: .85rem;
+  transform: translateY(80px); opacity: 0; transition: all .3s; z-index: 9999;
+  max-width: 290px; border-left: 3px solid var(--teal);
+  box-shadow: 0 8px 24px rgba(0,0,0,.2);
+}
+#toast.show { transform: translateY(0); opacity: 1; }
+/* MAP PLACEHOLDER */
+.map-section {
+  max-width: 1100px; margin: 0 auto 6rem; padding: 0 2rem;
+}
+.map-section h2 {
+  font-family: 'Lora', serif; font-size: 1.4rem; margin-bottom: 1.2rem;
+}
+.map-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+  height: 300px; display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+.map-box-inner { text-align: center; color: var(--muted); }
+.map-box-inner .map-icon { font-size: 3rem; margin-bottom: .7rem; }
+/* FOOTER */
+footer {
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 3rem 2rem 2rem; text-align: center;
+}
+footer .footer-logo {
+  font-family: 'Lora', serif; font-size: 1.4rem; font-weight: 700;
+  color: var(--teal); margin-bottom: .8rem; display: block;
+}
+footer p { color: var(--muted); font-size: .85rem; }
+/* REVEAL */
+.reveal { opacity: 0; transform: translateY(30px); transition: opacity .7s ease, transform .7s ease; }
+.reveal.visible { opacity: 1; transform: none; }
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .nav-links, .nav-cta { display: none; }
+  .hamburger { display: flex; }
+  .mobile-nav { display: flex; }
+  .contact-section { grid-template-columns: 1fr; }
+  .form-row { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div id="pageTransition"></div>
+
+<div id="scrollProgress"></div>
+
+<nav>
+  <a href="index.html" class="nav-logo">EcoWay</a>
+  <ul class="nav-links">
+    <li><a href="index.html">Ana Sayfa</a></li>
+    <li><a href="index.html#sorun">Sorun</a></li>
+    <li><a href="index.html#nasil">Çalışma Prensibi</a></li>
+    <li><a href="index.html#teknoloji">Teknoloji</a></li>
+    <li><a href="index.html#veri">Veriler</a></li>
+    <li><a href="index.html#oylama">Anket</a></li>
+    <li><a href="iletisim.html" class="active">İletişim</a></li>
+    <li><a href="destek.html">Destek</a></li>
+  </ul>
+  <a href="destek.html" class="nav-cta">Destekle</a>
+  <button class="hamburger" id="hamburgerBtn" aria-label="Menüyü aç" onclick="toggleMobileNav()">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="mobile-nav" id="mobileNav">
+  <a href="index.html" onclick="closeMobileNav()">Ana Sayfa</a>
+  <a href="index.html#sorun" onclick="closeMobileNav()">Sorun</a>
+  <a href="index.html#nasil" onclick="closeMobileNav()">Çalışma Prensibi</a>
+  <a href="index.html#teknoloji" onclick="closeMobileNav()">Teknoloji</a>
+  <a href="index.html#veri" onclick="closeMobileNav()">Veriler</a>
+  <a href="index.html#oylama" onclick="closeMobileNav()">Anket</a>
+  <a href="iletisim.html" onclick="closeMobileNav()">İletişim</a>
+  <a href="destek.html" onclick="closeMobileNav()">Destek</a>
+  <a href="destek.html" class="mob-cta" onclick="closeMobileNav()">Destekle</a>
+</div>
+
+<!-- HERO -->
+<section class="page-hero">
+  <h1>Bizimle İletişime Geçin</h1>
+  <p>EcoWay projesi hakkında sorularınız, önerileriniz veya iş birliği talepleriniz için buradayız.</p>
+</section>
+
+<!-- CONTACT -->
+<div class="contact-section">
+  <!-- Left: Info -->
+  <div class="contact-info reveal">
+    <div>
+      <h2>Merhaba 👋</h2>
+      <p>EcoWay, Türkiye genelinde trafik kaynaklı CO₂ emisyonlarını azaltmayı hedefleyen bir öğrenci projesidir. Proje hakkında merak ettiklerinizi sormaktan çekinmeyin.</p>
+    </div>
+
+    <div class="contact-item reveal">
+      <div class="contact-item-icon">📧</div>
+      <div class="contact-item-text">
+        <span class="contact-item-title">E-posta</span>
+        <span class="contact-item-val"><a href="mailto:iletisim@ecoway.tr">iletisim@ecoway.tr</a></span>
+      </div>
+    </div>
+
+    <div class="contact-item reveal">
+      <div class="contact-item-icon">📱</div>
+      <div class="contact-item-text">
+        <span class="contact-item-title">Sosyal Medya</span>
+        <span class="contact-item-val">@ecoway.tr — Instagram & Twitter</span>
+      </div>
+    </div>
+
+    <div class="contact-item reveal">
+      <div class="contact-item-icon">🏫</div>
+      <div class="contact-item-text">
+        <span class="contact-item-title">Okul</span>
+        <span class="contact-item-val">Proje ekibi — Türkiye</span>
+      </div>
+    </div>
+
+    <div class="contact-item reveal">
+      <div class="contact-item-icon">⏰</div>
+      <div class="contact-item-text">
+        <span class="contact-item-title">Yanıt Süresi</span>
+        <span class="contact-item-val">Genellikle 24-48 saat içinde yanıt veriyoruz.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Form -->
+  <div class="contact-form-wrap reveal">
+    <h2>Mesaj Gönderin</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Adınız</label>
+        <input type="text" id="contactName" placeholder="Ali Yılmaz">
+      </div>
+      <div class="form-group">
+        <label>E-posta</label>
+        <input type="email" id="contactEmail" placeholder="ali@email.com">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Konu</label>
+      <select id="contactSubject">
+        <option value="">Konu seçin…</option>
+        <option>Proje hakkında soru</option>
+        <option>İş birliği teklifi</option>
+        <option>Teknik destek</option>
+        <option>Medya / Basın</option>
+        <option>Diğer</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Mesajınız</label>
+      <textarea id="contactMsg" placeholder="Mesajınızı buraya yazın…"></textarea>
+    </div>
+    <button class="btn-send" onclick="sendContact()">Gönder →</button>
+  </div>
+</div>
+
+<!-- MAP PLACEHOLDER -->
+<section class="map-section">
+  <h2>Proje Kapsamı 🗺️</h2>
+  <div class="map-box">
+    <div class="map-box-inner">
+      <div class="map-icon">🇹🇷</div>
+      <p style="font-size:1rem;color:var(--muted)">EcoWay Türkiye genelinde<br>tüm şehirlerde uygulanabilir bir sistem sunar.</p>
+    </div>
+  </div>
+</section>
+
+<div id="toast"></div>
+
+<footer>
+  <a href="index.html" class="footer-logo">EcoWay</a>
+  <p>© 2026 EcoWay — Trafik Yönetimi & CO₂ Azaltım Projesi</p>
+  <p style="margin-top:.4rem;">
+    <a href="index.html" style="color:var(--teal);text-decoration:none;margin:0 .6rem">Ana Sayfa</a>
+    <a href="iletisim.html" style="color:var(--teal);text-decoration:none;margin:0 .6rem">İletişim</a>
+    <a href="destek.html" style="color:var(--teal);text-decoration:none;margin:0 .6rem">Destek</a>
+  </p>
+</footer>
+
+<script>
+// Scroll progress
+window.addEventListener('scroll', () => {
+  const sp = document.getElementById('scrollProgress');
+  const pct = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
+  if (sp) sp.style.width = Math.min(100, pct) + '%';
+});
+
+// Hamburger
+function toggleMobileNav() {
+  const nav = document.getElementById('mobileNav');
+  const btn = document.getElementById('hamburgerBtn');
+  nav.classList.toggle('open');
+  btn.classList.toggle('open');
+}
+function closeMobileNav() {
+  document.getElementById('mobileNav').classList.remove('open');
+  document.getElementById('hamburgerBtn').classList.remove('open');
+}
+
+// Toast
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// Contact form
+function sendContact() {
+  const name  = document.getElementById('contactName').value.trim();
+  const email = document.getElementById('contactEmail').value.trim();
+  const subj  = document.getElementById('contactSubject').value;
+  const msg   = document.getElementById('contactMsg').value.trim();
+
+  if (!name)  { showToast('⚠️ Lütfen adınızı girin.'); return; }
+  if (!email || !email.includes('@')) { showToast('⚠️ Geçerli bir e-posta girin.'); return; }
+  if (!subj)  { showToast('⚠️ Lütfen bir konu seçin.'); return; }
+  if (!msg)   { showToast('⚠️ Mesaj alanı boş bırakılamaz.'); return; }
+
+  // Simulate send
+  const btn = document.querySelector('.btn-send');
+  btn.textContent = 'Gönderiliyor…';
+  btn.disabled = true;
+  setTimeout(() => {
+    btn.textContent = '✓ Gönderildi!';
+    showToast('✅ Mesajınız alındı! En kısa sürede dönüş yapacağız.');
+    document.getElementById('contactName').value  = '';
+    document.getElementById('contactEmail').value = '';
+    document.getElementById('contactSubject').value = '';
+    document.getElementById('contactMsg').value   = '';
+    setTimeout(() => { btn.textContent = 'Gönder →'; btn.disabled = false; }, 2500);
+  }, 1200);
+}
+
+// Reveal on scroll
+const revealObs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); revealObs.unobserve(e.target); } });
+}, { threshold: .12 });
+document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+// Sayfa geçiş animasyonu
+(function() {
+  const pt = document.getElementById('pageTransition');
+  if (!pt) return;
+  document.querySelectorAll('a[href]').forEach(a => {
+    const href = a.getAttribute('href');
+    if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto')) return;
+    a.addEventListener('click', e => {
+      e.preventDefault(); pt.classList.add('active');
+      setTimeout(() => { window.location.href = href; }, 460);
+    });
+  });
+})();
+</script>
+</body>
+</html>
