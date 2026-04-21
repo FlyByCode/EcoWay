@@ -194,9 +194,64 @@ body{background:var(--bg);color:var(--text);font-family:'Source Sans 3',sans-ser
 /* BOŞ */
 .empty{text-align:center;padding:2.5rem;color:var(--muted);font-size:.875rem;background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius-md);}
 
-@media(max-width:900px){.stat-grid{grid-template-columns:1fr 1fr 1fr;}}
-@media(max-width:700px){.stat-grid{grid-template-columns:1fr 1fr;}.admin-main{padding:1.2rem 1rem;}.donation-amount{margin-left:0;}}
-@media(max-width:400px){.stat-grid{grid-template-columns:1fr;}}
+@media(max-width:900px){
+  .stat-grid{grid-template-columns:1fr 1fr 1fr;}
+  .admin-main{padding:1.5rem 1.2rem;}
+}
+@media(max-width:700px){
+  .stat-grid{grid-template-columns:1fr 1fr;}
+  .admin-main{padding:1rem .9rem;}
+  .admin-nav{padding:0 1rem;}
+  .admin-nav-logo{font-size:.95rem;}
+  .admin-nav-right{gap:.5rem;}
+  .logout-btn{padding:.3rem .7rem;font-size:.75rem;}
+
+  .tabs{gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;}
+  .tab-btn{padding:.6rem .9rem;font-size:.8rem;white-space:nowrap;flex-shrink:0;}
+
+  .stat-card{padding:1rem 1.1rem;}
+  .stat-val{font-size:1.6rem;}
+  .stat-lbl{font-size:.7rem;}
+
+  .c-row{padding:.9rem 1rem;}
+  .c-text{font-size:.84rem;}
+
+  .donation-row{padding:1rem 1.1rem;flex-direction:column;gap:.7rem;}
+  .donation-avatar{width:36px;height:36px;font-size:.78rem;}
+  .donation-amount{margin-left:0;font-size:1.05rem;}
+  .donation-top{flex-wrap:wrap;}
+
+  .filter-bar{gap:.4rem;}
+  .filter-btn{padding:.28rem .7rem;font-size:.75rem;}
+  .donation-total-bar{gap:1rem;font-size:.82rem;}
+
+  .danger-actions{flex-direction:column;}
+  .btn-danger,.btn-danger-o{width:100%;text-align:center;min-height:44px;}
+
+  /* Prevent iOS input zoom */
+  .inp{font-size:16px !important;}
+
+  .modal-box{max-width:96vw;padding:1.5rem 1.2rem;}
+  .modal-actions{flex-direction:column;gap:.5rem;}
+  .modal-cancel,.modal-ok{width:100%;text-align:center;min-height:44px;}
+
+  .toast{right:.8rem;left:.8rem;max-width:100%;bottom:.8rem;}
+
+  .login-card{padding:2rem 1.5rem;margin:1rem;}
+}
+@media(max-width:480px){
+  .stat-grid{grid-template-columns:1fr 1fr;}
+  .stat-val{font-size:1.4rem;}
+  .sec-title{font-size:1rem;}
+  .c-actions{flex-wrap:wrap;}
+  .donation-actions{flex-wrap:wrap;}
+}
+@media(max-width:360px){
+  .stat-grid{grid-template-columns:1fr 1fr;}
+  .stat-val{font-size:1.2rem;}
+  .tab-btn{padding:.55rem .7rem;font-size:.75rem;}
+  .admin-main{padding:.8rem .7rem;}
+}
 </style>
 </head>
 <body>
