@@ -6,6 +6,10 @@
 <title>EcoWay — Akıllı Yaya Geçidi Yönetim Sistemi</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!-- Firebase SDK (compat) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
 <style>
 :root {
   --bg: #f8f8f5;
@@ -251,16 +255,168 @@ footer { background: #141814; color: rgba(255,255,255,.5); padding: 3rem 2.5rem;
 }
 .toast.show { transform: translateY(0); opacity: 1; }
 
+/* Page transition overlay */
+#pageTransition {
+  position: fixed; inset: 0; z-index: 99000;
+  background: var(--teal);
+  transform: scaleY(0); transform-origin: bottom;
+  transition: transform .45s cubic-bezier(.77,0,.18,1);
+  pointer-events: none;
+}
+#pageTransition.active { transform: scaleY(1); transform-origin: top; }
+/* Hero spotlight */
+.hero { --mx: 50%; --my: 50%; }
+.hero::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 400px 300px at var(--mx) var(--my),
+    rgba(52,211,153,.08) 0%, transparent 70%);
+  transition: background .1s;
+}
+/* 3D tilt cards */
+.tilt-card { transform-style: preserve-3d; transition: transform .1s ease; }
+/* Glitch on h1 */
+.hero h1 { position: relative; }
+.hero h1.glitch::before, .hero h1.glitch::after {
+  content: attr(data-text); position: absolute; inset: 0;
+  color: var(--teal); overflow: hidden;
+}
+.hero h1.glitch::before {
+  clip-path: polygon(0 15%, 100% 15%, 100% 30%, 0 30%);
+  animation: gl1 .6s steps(2) forwards;
+}
+.hero h1.glitch::after {
+  clip-path: polygon(0 60%, 100% 60%, 100% 75%, 0 75%);
+  animation: gl2 .6s steps(2) forwards;
+  left: 2px;
+}
+@keyframes gl1 {
+  0%   { transform: translateX(-4px); opacity: 1; }
+  60%  { transform: translateX( 4px); opacity: .8; }
+  100% { transform: translateX(0);    opacity: 0; }
+}
+@keyframes gl2 {
+  0%   { transform: translateX( 4px); opacity: 1; }
+  60%  { transform: translateX(-4px); opacity: .8; }
+  100% { transform: translateX(0);    opacity: 0; }
+}
+/* Scroll progress bar */
+#scrollProgress {
+  position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+  background: linear-gradient(90deg, var(--teal), #7c3aed);
+  z-index: 9999; transition: width .1s linear;
+}
+
+/* ── HAMBURGER MENU ── */
+.hamburger {
+  display: none; flex-direction: column; gap: 5px; cursor: pointer;
+  background: none; border: none; padding: .4rem; z-index: 200;
+}
+.hamburger span {
+  display: block; width: 22px; height: 2px;
+  background: var(--text); border-radius: 2px;
+  transition: transform .3s, opacity .3s;
+}
+.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* ── MOBILE NAV DRAWER ── */
+.mobile-nav {
+  display: none; position: fixed; top: 60px; left: 0; right: 0; bottom: 0;
+  background: rgba(255,255,255,.98); backdrop-filter: blur(16px);
+  z-index: 99; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2rem; opacity: 0; pointer-events: none;
+  transition: opacity .3s ease;
+}
+.mobile-nav.open { opacity: 1; pointer-events: all; }
+.mobile-nav a {
+  font-family: 'Lora', serif; font-size: 1.4rem; font-weight: 600;
+  color: var(--text); text-decoration: none;
+  transition: color .2s, transform .2s;
+}
+.mobile-nav a:hover { color: var(--green); transform: translateX(4px); }
+.mobile-nav .mob-cta {
+  background: var(--green); color: #fff; border: none;
+  padding: .7rem 2rem; border-radius: var(--radius);
+  font-family: 'Source Sans 3', sans-serif; font-size: 1rem;
+  font-weight: 600; cursor: pointer; margin-top: .5rem;
+}
+
 @media(max-width: 768px) {
-  .hero-inner { grid-template-columns: 1fr; gap: 2.2rem; }
-  .problem-grid { grid-template-columns: 1fr; }
-  .steps { grid-template-columns: 1fr 1fr; }
-  .tech-grid { grid-template-columns: 1fr; }
-  .form-row { grid-template-columns: 1fr; }
-  .support-inner { flex-direction: column; gap: 1.6rem; }
-  .footer-inner { flex-direction: column; }
+  /* NAV */
   .nav-links { display: none; }
-  .problem-stat { flex-direction: column; gap: 1.1rem; text-align: center; }
+  .hamburger { display: flex; }
+  .mobile-nav { display: flex; }
+  nav { padding: 0 1.2rem; }
+
+  /* HERO */
+  .hero { padding: 5.5rem 1.2rem 3rem; }
+  .hero-inner { grid-template-columns: 1fr; gap: 2rem; }
+  h1 { font-size: 1.85rem; }
+  .hero-desc { font-size: .95rem; }
+  .hero-btns { flex-direction: column; gap: .7rem; }
+  .btn-primary, .btn-outline { width: 100%; text-align: center; padding: .8rem 1rem; }
+
+  /* CO2 LIVE */
+  .co2-live { padding: 1.1rem 1.2rem; }
+  .co2-live-val { font-size: 1.8rem; }
+  .hero-stats { margin-top: 2rem; }
+
+  /* SECTIONS */
+  section { padding: 3rem 1.2rem; }
+  h2 { font-size: 1.45rem; }
+
+  /* PROBLEM */
+  .problem-grid { grid-template-columns: 1fr; }
+  .problem-card { padding: 1.4rem 1.2rem; }
+  .problem-stat { flex-direction: column; gap: 1rem; text-align: center; padding: 1.4rem 1.2rem; }
+  .problem-stat-num { font-size: 2.4rem; }
+
+  /* HOW */
+  .steps { grid-template-columns: 1fr; }
+  .step { padding: 1.3rem 1.2rem; }
+
+  /* TECH */
+  .tech-grid { grid-template-columns: 1fr; gap: 2rem; }
+  .code-panel { font-size: .75rem; }
+  .code-body { padding: 1rem 1rem; font-size: .74rem; }
+
+  /* DATA TABLE */
+  .data-table { font-size: .78rem; }
+  .data-table th, .data-table td { padding: .65rem .7rem; }
+  .data-table { display: block; overflow-x: auto; white-space: nowrap; }
+
+  /* POLL / CALC */
+  .poll-wrap { max-width: 100%; }
+  .calc-body { padding: 1rem 1.1rem; gap: 1rem; }
+  .calc-slider-wrap { gap: .6rem; }
+  .calc-result-box { padding: 1rem 1.1rem; }
+  .highlight-val { font-size: 1.2rem; }
+
+  /* SUPPORT */
+  .support-inner { flex-direction: column; gap: 1.4rem; }
+  .support-count { font-size: 3rem; }
+  .btn-support { width: 100%; text-align: center; padding: .8rem 1rem; }
+
+  /* COMMENTS */
+  .comment-form-body { padding: 1rem; }
+  .form-row { grid-template-columns: 1fr; }
+  .comment-item { padding: 1rem 1.1rem; }
+  .btn-comment { width: 100%; text-align: center; }
+
+  /* FOOTER */
+  .footer-inner { flex-direction: column; gap: 1.5rem; }
+  footer { padding: 2rem 1.2rem; }
+
+  /* PARTICLES — lighter on mobile */
+  #particles-canvas { opacity: .2; }
+}
+
+@media(max-width: 400px) {
+  h1 { font-size: 1.6rem; }
+  .hero-stat-val { font-size: 1.35rem; }
+  .problem-stat-num { font-size: 2rem; }
+  .steps { grid-template-columns: 1fr; }
 }
 
 /* ── SCROLL REVEAL ── */
@@ -469,21 +625,44 @@ h1 { animation: heroFadeUp .8s cubic-bezier(.22,1,.36,1) .2s both; }
 </head>
 <body>
 
+<!-- Custom cursor -->
+<div id="pageTransition"></div>
+
 <div id="scrollProgress"></div>
 <canvas id="particles-canvas"></canvas>
 
 <nav>
   <div class="nav-logo">EcoWay</div>
   <ul class="nav-links">
+    <li><a href="index.html">Ana Sayfa</a></li>
     <li><a href="#sorun">Sorun</a></li>
     <li><a href="#nasil">Çalışma Prensibi</a></li>
     <li><a href="#teknoloji">Teknoloji</a></li>
     <li><a href="#veri">Veriler</a></li>
     <li><a href="#oylama">Anket</a></li>
     <li><a href="#yorumlar">Yorumlar</a></li>
+    <li><a href="iletisim.html">İletişim</a></li>
+    <li><a href="destek.html">Destek</a></li>
   </ul>
   <button class="nav-cta" onclick="document.getElementById('destek').scrollIntoView({behavior:'smooth'})">Destekle</button>
+  <button class="hamburger" id="hamburgerBtn" aria-label="Menüyü aç" onclick="toggleMobileNav()">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
+
+<!-- MOBİL MENÜ -->
+<div class="mobile-nav" id="mobileNav">
+  <a href="index.html" onclick="closeMobileNav()">Ana Sayfa</a>
+  <a href="#sorun" onclick="closeMobileNav()">Sorun</a>
+  <a href="#nasil" onclick="closeMobileNav()">Çalışma Prensibi</a>
+  <a href="#teknoloji" onclick="closeMobileNav()">Teknoloji</a>
+  <a href="#veri" onclick="closeMobileNav()">Veriler</a>
+  <a href="#oylama" onclick="closeMobileNav()">Anket</a>
+  <a href="#yorumlar" onclick="closeMobileNav()">Yorumlar</a>
+  <a href="iletisim.html" onclick="closeMobileNav()">İletişim</a>
+  <a href="destek.html" onclick="closeMobileNav()">Destek</a>
+  <button class="mob-cta" onclick="closeMobileNav(); document.getElementById('destek').scrollIntoView({behavior:'smooth'})">Destekle</button>
+</div>
 
 <!-- HERO -->
 <section class="hero">
@@ -820,6 +999,7 @@ geçen = time.time() - yaya_ilk_görülme
         <span class="hw-tag">RPi.GPIO</span>
       </div>
       <p class="footer-copy">Tüm veriler tarayıcınızda yerel olarak saklanır. Sunucu gerekmez.</p>
+      <a href="admin.html" style="font-size:.65rem;opacity:.15;color:rgba(255,255,255,.4);text-decoration:none;display:block;margin-top:.9rem;" title="Yönetim">&#9679;</a>
     </div>
     <div class="footer-links">
       <div class="footer-links-title">Sayfalar</div>
@@ -843,6 +1023,21 @@ geçen = time.time() - yaya_ilk_görülme
 <div class="toast" id="toast"><span id="toastMsg"></span></div>
 
 <script>
+// ── MOBİL MENÜ ──
+function toggleMobileNav() {
+  const nav = document.getElementById('mobileNav');
+  const btn = document.getElementById('hamburgerBtn');
+  const isOpen = nav.classList.toggle('open');
+  btn.classList.toggle('open', isOpen);
+  document.body.style.overflow = isOpen ? 'hidden' : '';
+}
+function closeMobileNav() {
+  document.getElementById('mobileNav').classList.remove('open');
+  document.getElementById('hamburgerBtn').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeMobileNav(); });
+
 function showToast(msg) {
   const t = document.getElementById('toast');
   document.getElementById('toastMsg').textContent = msg;
@@ -861,27 +1056,52 @@ function tickCO2() {
 }
 tickCO2();
 
-// Oylama 1
+// Firebase config firebase-config.js üzerinden geliyor — fbRef() orada tanımlı.
+
+// ── ANKET ──
 function loadPoll() {
-  const d = JSON.parse(localStorage.getItem('eco_poll_v2') || '{"evet":0,"pilot":0,"bilmiyorum":0,"hayir":0}');
   const voted = localStorage.getItem('eco_voted_v2');
-  const total = Object.values(d).reduce((a,b)=>a+b,0);
+  const ref   = fbRef('ecoway/poll');
+  if (!ref) {
+    const d = JSON.parse(localStorage.getItem('eco_poll_v2') ||
+      '{"evet":0,"pilot":0,"bilmiyorum":0,"hayir":0}');
+    _renderPoll(d, voted);
+    return;
+  }
+  ref.on('value', snap => {
+    const d = snap.val() || { evet:0, pilot:0, bilmiyorum:0, hayir:0 };
+    _renderPoll(d, voted);
+  });
+}
+function _renderPoll(d, voted) {
+  const total = Object.values(d).reduce((a,b) => a+b, 0);
   ['evet','pilot','bilmiyorum','hayir'].forEach(k => {
     const pct = total > 0 ? Math.round(d[k]/total*100) : 0;
     const pctEl = document.getElementById('pct-'+k);
-    if(pctEl) pctEl.textContent = total > 0 ? pct+'%' : '—';
-    const opt = document.querySelector(`[data-val="${k}"]:not([data-poll])`);
-    if(opt) { opt.style.setProperty('--pct', pct+'%'); if(voted===k) opt.classList.add('selected'); }
+    if (pctEl) pctEl.textContent = total > 0 ? pct+'%' : '—';
+    const opt = document.querySelector('[data-val="'+k+'"]:not([data-poll])');
+    if (opt) {
+      opt.style.setProperty('--pct', pct+'%');
+      if (voted === k) opt.classList.add('selected');
+    }
   });
-  document.getElementById('pollFooter').textContent = `Toplam ${total} oy${voted ? ' — Oyunuz alındı, teşekkürler.' : ' — Oylamaya katıl'}`;
+  document.getElementById('pollFooter').textContent =
+    'Toplam ' + total.toLocaleString('tr-TR') + ' oy' +
+    (voted ? ' — Oyunuz alındı, teşekkürler.' : ' — Oylamaya katıl');
 }
 function vote(val) {
-  if(localStorage.getItem('eco_voted_v2')) { showToast('Zaten oy kullandınız.'); return; }
-  const d = JSON.parse(localStorage.getItem('eco_poll_v2') || '{"evet":0,"pilot":0,"bilmiyorum":0,"hayir":0}');
-  d[val]++;
-  localStorage.setItem('eco_poll_v2', JSON.stringify(d));
+  if (localStorage.getItem('eco_voted_v2')) { showToast('Zaten oy kullandınız.'); return; }
   localStorage.setItem('eco_voted_v2', val);
-  loadPoll();
+  const ref = fbRef('ecoway/poll/' + val);
+  if (ref) {
+    ref.transaction(cur => (cur || 0) + 1);
+  } else {
+    const d = JSON.parse(localStorage.getItem('eco_poll_v2') ||
+      '{"evet":0,"pilot":0,"bilmiyorum":0,"hayir":0}');
+    d[val]++;
+    localStorage.setItem('eco_poll_v2', JSON.stringify(d));
+    loadPoll();
+  }
   showToast('Oyunuz kaydedildi.');
 }
 
@@ -950,81 +1170,132 @@ function initCalc() {
 }
 initCalc();
 
-// Destek
+// ── DESTEK (Firebase) ──
 function loadSupport() {
-  const count = parseInt(localStorage.getItem('eco_support_v2') || '0');
-  document.getElementById('supportCount').textContent = count.toLocaleString('tr-TR');
   const supported = localStorage.getItem('eco_user_support_v2') === '1';
   const btn = document.getElementById('supportBtn');
   document.getElementById('supportBtnText').textContent = supported ? 'Destekliyorsunuz' : 'Ben de Destekliyorum';
-  if(supported) btn.classList.add('supported'); else btn.classList.remove('supported');
+  if (supported) btn.classList.add('supported'); else btn.classList.remove('supported');
+
+  const ref = fbRef('ecoway/support');
+  if (ref) {
+    ref.on('value', snap => {
+      const count = snap.val() || 0;
+      document.getElementById('supportCount').textContent = count.toLocaleString('tr-TR');
+    });
+  } else {
+    const count = parseInt(localStorage.getItem('eco_support_v2') || '0');
+    document.getElementById('supportCount').textContent = count.toLocaleString('tr-TR');
+  }
 }
 function toggleSupport() {
   const supported = localStorage.getItem('eco_user_support_v2') === '1';
-  let count = parseInt(localStorage.getItem('eco_support_v2') || '0');
-  if(!supported) {
-    count++;
-    localStorage.setItem('eco_support_v2', count);
-    localStorage.setItem('eco_user_support_v2', '1');
-    showToast('Desteğiniz kaydedildi.');
+  const ref = fbRef('ecoway/support');
+  if (ref) {
+    if (!supported) {
+      ref.transaction(cur => (cur || 0) + 1);
+      localStorage.setItem('eco_user_support_v2', '1');
+      showToast('Desteğiniz kaydedildi.');
+    } else {
+      ref.transaction(cur => Math.max(0, (cur || 0) - 1));
+      localStorage.removeItem('eco_user_support_v2');
+      showToast('Destek geri alındı.');
+    }
   } else {
-    count = Math.max(0, count-1);
-    localStorage.setItem('eco_support_v2', count);
-    localStorage.removeItem('eco_user_support_v2');
-    showToast('Destek geri alındı.');
+    let count = parseInt(localStorage.getItem('eco_support_v2') || '0');
+    if (!supported) {
+      count++;
+      localStorage.setItem('eco_support_v2', count);
+      localStorage.setItem('eco_user_support_v2', '1');
+      showToast('Desteğiniz kaydedildi.');
+    } else {
+      count = Math.max(0, count-1);
+      localStorage.setItem('eco_support_v2', count);
+      localStorage.removeItem('eco_user_support_v2');
+      showToast('Destek geri alındı.');
+    }
   }
   loadSupport();
 }
 
-// Yorumlar
-function loadComments() {
-  const comments = JSON.parse(localStorage.getItem('eco_comments_v2') || '[]');
+// ── YORUMLAR (Firebase) ──
+function _renderComments(comments) {
   const list = document.getElementById('commentsList');
-  const noC = document.getElementById('noComments');
-  if(comments.length === 0) { noC.style.display='block'; list.innerHTML=''; list.appendChild(noC); return; }
+  const noC  = document.getElementById('noComments');
+  if (!comments || comments.length === 0) {
+    noC.style.display = 'block'; list.innerHTML = ''; list.appendChild(noC); return;
+  }
   list.innerHTML = '';
   [...comments].reverse().forEach(c => {
     const div = document.createElement('div');
     div.className = 'comment-item';
     const likedKey = 'eco_liked_v2_' + c.id;
-    const isLiked = localStorage.getItem(likedKey) === '1';
-    div.innerHTML = `
-      <div class="comment-header">
-        <div class="comment-avatar">${escHtml(c.name.slice(0,2).toUpperCase())}</div>
-        <span class="comment-name">${escHtml(c.name)}</span>
-        <span class="comment-role">${escHtml(c.role)}</span>
-        <span class="comment-date">${escHtml(c.date)}</span>
-      </div>
-      <div class="comment-text">${escHtml(c.text)}</div>
-      <button class="comment-like ${isLiked?'liked':''}" onclick="likeComment('${c.id}')">Faydalı (${c.likes||0})</button>
-    `;
+    const isLiked  = localStorage.getItem(likedKey) === '1';
+    div.innerHTML =
+      '<div class="comment-header">' +
+        '<div class="comment-avatar">' + escHtml(c.name.slice(0,2).toUpperCase()) + '</div>' +
+        '<span class="comment-name">' + escHtml(c.name) + '</span>' +
+        '<span class="comment-role">' + escHtml(c.role) + '</span>' +
+        '<span class="comment-date">' + escHtml(c.date) + '</span>' +
+      '</div>' +
+      '<div class="comment-text">' + escHtml(c.text) + '</div>' +
+      '<button class="comment-like ' + (isLiked?'liked':'') + '" onclick="likeComment(\'' + c.id + '\')">Faydalı (' + (c.likes||0) + ')</button>';
     list.appendChild(div);
   });
 }
+
+function loadComments() {
+  const ref = fbRef('ecoway/comments');
+  if (ref) {
+    ref.orderByChild('ts').limitToLast(50).on('value', snap => {
+      const raw = snap.val();
+      const list = raw ? Object.values(raw) : [];
+      _renderComments(list.sort((a,b) => (b.ts||0)-(a.ts||0)));
+    });
+  } else {
+    const comments = JSON.parse(localStorage.getItem('eco_comments_v2') || '[]');
+    _renderComments(comments);
+  }
+}
+
 function addComment() {
   const name = document.getElementById('commentName').value.trim();
   const role = document.getElementById('commentRole').value;
   const text = document.getElementById('commentText').value.trim();
-  if(!name) { showToast('Lütfen isim giriniz.'); return; }
-  if(text.length < 5) { showToast('Lütfen en az 5 karakter yazınız.'); return; }
-  const comments = JSON.parse(localStorage.getItem('eco_comments_v2') || '[]');
-  const now = new Date();
+  if (!name) { showToast('Lütfen isim giriniz.'); return; }
+  if (text.length < 5) { showToast('Lütfen en az 5 karakter yazınız.'); return; }
+  const now  = new Date();
   const date = now.toLocaleDateString('tr-TR', {day:'numeric',month:'long',year:'numeric'});
-  comments.push({ id: Date.now().toString(), name, role, text, date, likes:0 });
-  localStorage.setItem('eco_comments_v2', JSON.stringify(comments));
+  const id   = Date.now().toString();
+  const comment = { id, name, role, text, date, ts: now.getTime(), likes: 0 };
+  const ref = fbRef('ecoway/comments/' + id);
+  if (ref) {
+    ref.set(comment);
+  } else {
+    const comments = JSON.parse(localStorage.getItem('eco_comments_v2') || '[]');
+    comments.push(comment);
+    localStorage.setItem('eco_comments_v2', JSON.stringify(comments));
+    loadComments();
+  }
   document.getElementById('commentName').value = '';
   document.getElementById('commentText').value = '';
-  loadComments();
   showToast('Yorumunuz eklendi.');
 }
+
 function likeComment(id) {
   const likedKey = 'eco_liked_v2_' + id;
-  if(localStorage.getItem(likedKey)==='1') { showToast('Zaten beğendiniz.'); return; }
-  const comments = JSON.parse(localStorage.getItem('eco_comments_v2') || '[]');
-  const c = comments.find(x=>x.id===id);
-  if(c) { c.likes=(c.likes||0)+1; localStorage.setItem('eco_comments_v2', JSON.stringify(comments)); }
-  localStorage.setItem(likedKey,'1');
-  loadComments();
+  if (localStorage.getItem(likedKey) === '1') { showToast('Zaten beğendiniz.'); return; }
+  localStorage.setItem(likedKey, '1');
+  const ref = fbRef('ecoway/comments/' + id + '/likes');
+  if (ref) {
+    ref.transaction(cur => (cur || 0) + 1);
+  } else {
+    const comments = JSON.parse(localStorage.getItem('eco_comments_v2') || '[]');
+    const c = comments.find(x => x.id === id);
+    if (c) { c.likes = (c.likes||0)+1; localStorage.setItem('eco_comments_v2', JSON.stringify(comments)); }
+    loadComments();
+  }
+  showToast('Beğeni kaydedildi.');
 }
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -1263,6 +1534,43 @@ document.head.appendChild(extraStyle);
   });
   document.querySelectorAll('.reveal').forEach(el => {
     revealObserver.observe(el);
+  });
+})();
+
+/* ── HERO SPOTLIGHT (mouse follow) ── */
+document.addEventListener('mousemove', e => {
+  const hero = document.querySelector('.hero');
+  if (!hero) return;
+  const r = hero.getBoundingClientRect();
+  if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+    hero.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100).toFixed(1) + '%');
+    hero.style.setProperty('--my', ((e.clientY - r.top)  / r.height * 100).toFixed(1) + '%');
+  }
+});
+
+/* ── GLITCH H1 ── */
+(function() {
+  const h1 = document.querySelector('.hero h1');
+  if (!h1) return;
+  h1.setAttribute('data-text', h1.textContent);
+  setInterval(() => {
+    h1.classList.add('glitch');
+    setTimeout(() => h1.classList.remove('glitch'), 650);
+  }, 5000);
+})();
+
+/* ── SAYFA GEÇİŞ ANİMASYONU ── */
+(function() {
+  const pt = document.getElementById('pageTransition');
+  if (!pt) return;
+  document.querySelectorAll('a[href]').forEach(a => {
+    const href = a.getAttribute('href');
+    if (!href || href.startsWith('#') || href.startsWith('http')) return;
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      pt.classList.add('active');
+      setTimeout(() => { window.location.href = href; }, 460);
+    });
   });
 })();
 </script>
