@@ -277,18 +277,64 @@ footer p { color: var(--muted); font-size: .85rem; }
 .reveal { opacity: 0; transform: translateY(30px); transition: opacity .7s ease, transform .7s ease; }
 .reveal.visible { opacity: 1; transform: none; }
 
-@media (max-width: 900px) { .tiers-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 900px) {
+  .tiers-grid { grid-template-columns: 1fr 1fr; }
+}
 @media (max-width: 768px) {
   .nav-links, .nav-cta { display: none; }
   .hamburger { display: flex; }
   .mobile-nav { display: flex; }
-  .tiers-grid, .volunteer-grid, .form-row, .card-row, .amount-grid { grid-template-columns: 1fr 1fr; }
-  .counter-strip { gap: 1.5rem; }
-  .amount-grid { grid-template-columns: 1fr 1fr; }
+  nav { padding: .8rem 1rem; }
+
+  .page-hero { padding: 4.5rem 1rem 2.5rem; }
+  .page-hero h1 { font-size: 2rem; }
+  .page-hero p { font-size: 1rem; }
+
+  .counter-strip { gap: 1.2rem; padding: 1.5rem 1rem 3rem; }
+  .counter-num { font-size: 2.2rem; }
+
+  .tiers-section { padding: 0 1rem 3.5rem; }
+  .tiers-grid { grid-template-columns: 1fr; gap: 1.2rem; }
+  .tier-card { padding: 1.6rem 1.3rem; }
+  .tier-btn { min-height: 44px; }
+
+  .donation-section { padding: 0 1rem 3.5rem; }
+  .donation-wrap { padding: 1.6rem 1.2rem; }
+  .amount-grid { grid-template-columns: 1fr 1fr; gap: .6rem; }
+  .amount-btn { min-height: 48px; font-size: .95rem; }
+  .form-row { grid-template-columns: 1fr; }
+  .btn-donate { min-height: 52px; font-size: 1rem; }
+
+  /* Prevent iOS input zoom */
+  .form-group input,
+  .form-group select,
+  .form-group textarea,
+  .amount-custom,
+  .card-input { font-size: 16px !important; }
+
+  .volunteer-section { padding: 0 1rem 3.5rem; }
+  .volunteer-grid { grid-template-columns: 1fr; gap: 1rem; }
+  .vol-form-wrap { padding: 1.4rem 1.2rem; }
+  .btn-vol { width: 100%; min-height: 48px; text-align: center; }
+
+  .faq-section { padding: 0 1rem 4rem; }
+  .faq-q { font-size: .9rem; padding: 1rem 1.1rem; min-height: 48px; }
+  .faq-a { padding: 0 1.1rem; }
+  .faq-item.open .faq-a { padding: .9rem 1.1rem 1.1rem; }
+
+  #toast { right: .8rem; left: .8rem; max-width: 100%; bottom: 1rem; }
+
+  .modal-box { max-width: 96vw; border-radius: var(--radius-md); }
+  .modal-body { padding: 1.4rem 1.1rem; }
+  .card-row { grid-template-columns: 1fr 1fr; gap: .6rem; }
+  .btn-pay { min-height: 52px; font-size: 1rem; }
 }
 @media (max-width: 480px) {
   .amount-grid { grid-template-columns: 1fr 1fr; }
-  .modal-box { max-width: 98vw; }
+  .modal-box { max-width: 100vw; border-radius: var(--radius-md) var(--radius-md) 0 0; }
+  .tiers-grid { grid-template-columns: 1fr; }
+  .tier-card.featured::before { font-size: .65rem; }
+  footer { padding: 2rem 1rem; }
 }
 </style>
 </head>
